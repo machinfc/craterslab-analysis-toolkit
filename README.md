@@ -1,0 +1,330 @@
+# Craterslab Analysis Toolkit
+
+[![CI](https://img.shields.io/badge/CI-configured-green.svg)](./.github/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+I built this project to analyze, review, and fix crater data from laboratory depth maps and QuickMap/LROC point clouds.
+It gives me one place to run analysis, visualization, manual correction, sensor capture, and environment diagnostics without editing internal paths.
+
+---
+
+## What this project does
+
+This toolkit supports:
+
+- crater analysis from `.npz` laboratory depth maps,
+- crater analysis from `.xyz` QuickMap/LROC point clouds,
+- visual review in 2D, profile, and 3D modes,
+- iterative fixing of crater geometry and classification,
+- sensor-based depth map capture with Kinect or Femto Bolt,
+- CSV export, correction logs, error logs, and session summaries.
+
+---
+
+## Install
+
+### Requirements
+
+- Python 3.11 recommended
+- Linux or another environment where `craterslab` and plotting work correctly
+- optional: `pyorbbecsdk2` if you want to use Femto Bolt
+
+### Install from GitHub
+
+```bash
+git clone https://github.com/machinfc/craterslab-analysis-toolkit.git
+cd craterslab-analysis-toolkit
+pyenv local 3.11.11
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+### Optional: Femto Bolt support
+
+```bash
+pip install pyorbbecsdk2
+```
+
+Alternative package name used in some environments:
+
+```bash
+pip install pyorbbecsdk
+```
+
+### Check the environment
+
+```bash
+python scripts/diagnostics/check_craterslab_env.py --full-traceback
+```
+
+---
+
+## Run
+
+### Start from the launcher
+
+```bash
+python main.py
+```
+
+### Direct commands
+
+Analyze crater data:
+
+```bash
+python scripts/analysis/data_analyzer.py
+```
+
+Review crater files visually:
+
+```bash
+python scripts/visualization/depth_map_visualizer.py
+```
+
+Fix crater geometry or classification:
+
+```bash
+python scripts/fixes/ellipse_fixer.py
+```
+
+Capture a new depth map from the sensor workflow:
+
+```bash
+python scripts/acquisition/depth_map_fetcher.py
+```
+
+Calculate slopes:
+
+```bash
+python scripts/analysis/slope_calculator.py
+```
+
+Run environment diagnostics:
+
+```bash
+python scripts/diagnostics/check_craterslab_env.py --full-traceback
+```
+
+---
+
+## Run from VS Code
+
+1. Open the repository folder.
+2. Select the `.venv` interpreter.
+3. Open the integrated terminal.
+4. Run:
+
+```bash
+source .venv/bin/activate
+python main.py
+```
+
+Use **Run Python File in Terminal** or the integrated terminal. Most workflows in this project are interactive.
+
+---
+
+## What currently works
+
+### CI and checks
+
+The repository includes CI configuration, linting, smoke compilation, and a small pytest suite.
+
+Run the local checks with:
+
+```bash
+make smoke
+make test
+make lint
+```
+
+Or directly:
+
+```bash
+python -m compileall main.py scripts toolkit
+pytest -q
+ruff check scripts toolkit tests
+```
+
+### Current benchmark status
+
+At this stage, the benchmark table is an honest status table.
+
+| Scenario | Status | Notes |
+|---|---:|---|
+| Single-file analysis | Not measured yet | Waiting for a stable public reference dataset |
+| Range analysis | Not measured yet | Waiting for a stable public reference dataset |
+| Strong scaling | Not measured yet | Same total workload, different processing scope |
+| Weak scaling | Not measured yet | Workload grows with file count |
+| Fixer batch review | Not measured yet | Highly interactive workflow |
+
+Benchmark commands and reporting format are documented in:
+
+- [`docs/benchmarking.md`](docs/benchmarking.md)
+
+---
+
+## Main workflows
+
+### Analyze crater data
+
+The analyzer supports:
+
+- all files,
+- one file,
+- a numeric range,
+- optional visualization,
+- optional observables comparison plots.
+
+If a file fails, the analyzer prints the problem, logs it, and lets me retry, inspect details, edit quick parameters, open the fixer, skip the file, or stop the batch.
+
+### Review crater data visually
+
+The visualizer supports:
+
+- all files,
+- one file,
+- a numeric range,
+- 2D views,
+- profile plots,
+- 3D views,
+- opening the fixer directly after review.
+
+For each file, all selected views open together so I can compare them at the same time.
+
+### Fix crater geometry and classification
+
+The general fixer supports:
+
+- changing `SurfaceType`,
+- changing ellipse points,
+- manual crop with `bbox`,
+- border crop,
+- auto crop,
+- repeated review until the result is acceptable,
+- export of corrected observables,
+- correction logging.
+
+### Capture crater depth maps from a sensor
+
+The fetcher supports:
+
+- `kinect`
+- `femto_bolt`
+
+It also supports:
+
+- the recommended `plane_impact` protocol,
+- an `impact_only` mode for quick checks,
+- full-frame capture or manual ROI with `bbox`.
+
+Femto Bolt capture uses the Orbbec Python SDK and saves `.npz` files in the same format expected by `craterslab`. It still needs experimental recalibration for real measurements.
+
+---
+
+## Outputs
+
+The toolkit writes outputs under:
+
+```text
+output/
+```
+
+This includes:
+
+- analyzer CSV files,
+- corrected CSV files,
+- profile CSV files,
+- slope CSV files,
+- sensor depth maps,
+- correction logs,
+- error logs,
+- session summaries.
+
+If a CSV already exists, the toolkit asks whether to overwrite it or create a new file.
+
+---
+
+## Logs and session summary
+
+Correction log:
+
+```text
+output/fix_logs/fix_history.txt
+```
+
+Error log:
+
+```text
+output/error_logs/error_history.txt
+```
+
+Session summary:
+
+```text
+output/session_logs/session_summary_<timestamp>.txt
+```
+
+The session summary is grouped into sections such as:
+
+- analyzed
+- reviewed
+- failed
+- corrected
+- outputs
+
+---
+
+## Honest status
+
+### Done
+
+- unified analyzer
+- unified visualizer
+- unified fixer
+- sensor acquisition entry point
+- per-file error handling in major workflows
+- correction logging
+- session summaries
+- VS Code and terminal workflows
+- technical documentation
+
+### Not done yet
+
+- real benchmark numbers
+- polished production-grade Femto Bolt calibration workflow
+- automatic figure export as a first-class feature
+- session-based output folder isolation
+
+### Not optimized yet
+
+- batch visualization for very large datasets
+- long interactive review sessions
+- sensor acquisition calibration workflow
+- large-scale benchmark automation
+
+---
+
+## Documentation map
+
+Use these documents when you need more detail:
+
+- [`docs/usage-guide.md`](docs/usage-guide.md)
+- [`docs/tool-map.md`](docs/tool-map.md)
+- [`docs/workflow-examples.md`](docs/workflow-examples.md)
+- [`docs/output-reference.md`](docs/output-reference.md)
+- [`docs/dataset-preparation.md`](docs/dataset-preparation.md)
+- [`docs/observable-interpretation.md`](docs/observable-interpretation.md)
+- [`docs/references.md`](docs/references.md)
+- [`docs/vscode-usage.md`](docs/vscode-usage.md)
+- [`docs/python-3.12-compatibility.md`](docs/python-3.12-compatibility.md)
+- [`docs/sensor-acquisition.md`](docs/sensor-acquisition.md)
+- [`docs/benchmarking.md`](docs/benchmarking.md)
+
+---
+
+## License
+
+This repository is distributed under the MIT License. See [`LICENSE`](LICENSE).

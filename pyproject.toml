@@ -1,0 +1,61 @@
+[project]
+name = "craterslab-analysis-toolkit"
+version = "0.1.0"
+description = "Analysis, visualization, correction, and sensor-acquisition scripts for crater datasets processed with craterslab."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+authors = [{ name = "Project Author" }]
+keywords = ["craters", "planetary science", "depth maps", "morphology", "remote sensing"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+  "craterslab>=0.2.8",
+  "numpy>=1.24",
+  "opencv-python>=4.8",
+  "scipy>=1.11",
+  "matplotlib>=3.7",
+  "scikit-learn>=1.3",
+  "keras>=3.0",
+  "tensorflow>=2.16.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=24.4",
+  "ruff>=0.6",
+  "pytest>=8.0",
+  "mypy>=1.10",
+  "pre-commit>=3.7",
+]
+sensor = [
+  "pyorbbecsdk2>=2.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/machinfc/craterslab-analysis-toolkit"
+Repository = "https://github.com/machinfc/craterslab-analysis-toolkit"
+Issues = "https://github.com/machinfc/craterslab-analysis-toolkit/issues"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["toolkit*"]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

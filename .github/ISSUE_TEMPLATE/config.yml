@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/machinfc/craterslab-analysis-toolkit
+    about: Please review the README and documentation before opening a support request.

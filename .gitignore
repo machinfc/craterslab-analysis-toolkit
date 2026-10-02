@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Outputs
+output/**
+!output/.gitkeep
+
+# Local data and generated artifacts
+*.npz
+*.mat
+*.xyz
+*.eps
+*.csv
+!data/**/.gitkeep
+!data/README.md
+
+# ML artifacts
+*.keras
+*.h5
+*.weights.h5
+
+# Notebook leftovers
+.ipynb_checkpoints/

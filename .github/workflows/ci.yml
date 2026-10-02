@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-test-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade packaging tools
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Import-level environment diagnostic
+        run: python scripts/diagnostics/check_craterslab_env.py
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Smoke compile
+        run: python -m compileall main.py scripts toolkit
+
+      - name: Ruff lint
+        run: ruff check scripts toolkit tests
