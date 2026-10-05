@@ -33,13 +33,14 @@ This toolkit supports:
 ### Install from GitHub
 
 ```bash
-git clone https://github.com/machinfc/craterslab-analysis-toolkit.git
-cd craterslab-analysis-toolkit
+git clone https://github.com/<YOUR-USER>/<YOUR-REPOSITORY>.git
+cd <YOUR-REPOSITORY>
 pyenv local 3.11.11
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
+pip install -e .
 ```
 
 ### Optional: Femto Bolt support
@@ -150,7 +151,7 @@ ruff check scripts toolkit tests
 
 ### Current benchmark status
 
-At this stage, the benchmark table is an honest status table.
+I do not publish fake benchmark numbers. At this stage, the benchmark table is an honest status table.
 
 | Scenario | Status | Notes |
 |---|---:|---|
