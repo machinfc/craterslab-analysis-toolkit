@@ -33,8 +33,8 @@ This toolkit supports:
 ### Install from GitHub
 
 ```bash
-git clone https://github.com/<YOUR-USER>/<YOUR-REPOSITORY>.git
-cd <YOUR-REPOSITORY>
+git clone https://github.com/machinfc/craterslab-analysis-toolkit.git
+cd craterslab-analysis-toolkit
 pyenv local 3.11.11
 python -m venv .venv
 source .venv/bin/activate
