@@ -25,7 +25,6 @@ def build_analysis_output_path(
     return output_dir / f"{dataset}{prefix_part}_{label}{range_part}.csv"
 
 
-
 def next_available_path(path: Path) -> Path:
     candidate = path
     index = 1
@@ -35,13 +34,18 @@ def next_available_path(path: Path) -> Path:
     return candidate
 
 
-
-def resolve_output_path(path: Path, overwrite: bool = False, prompt_user: bool = True) -> Path:
+def resolve_output_path(
+    path: Path, overwrite: bool = False, prompt_user: bool = True
+) -> Path:
     if not path.exists() or overwrite:
         return path
 
     if prompt_user:
-        answer = input(f"Output file already exists: {path}\nOverwrite it? [y/N]: ").strip().lower()
+        answer = (
+            input(f"Output file already exists: {path}\nOverwrite it? [y/N]: ")
+            .strip()
+            .lower()
+        )
         if answer in {"y", "yes", "s", "si", "sí"}:
             return path
 

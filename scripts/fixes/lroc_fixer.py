@@ -10,7 +10,9 @@ TARGET = PROJECT_ROOT / "scripts" / "fixes" / "ellipse_fixer.py"
 
 def main() -> None:
     print("[INFO] lroc_fixer.py is kept as a compatibility wrapper.")
-    print("[INFO] Please use scripts/fixes/ellipse_fixer.py for the unified fixer workflow.")
+    print(
+        "[INFO] Please use scripts/fixes/ellipse_fixer.py for the unified fixer workflow."
+    )
     command = [sys.executable, str(TARGET)]
     if len(sys.argv) > 1:
         command.extend(["--dataset", "quickmap", *sys.argv[1:]])

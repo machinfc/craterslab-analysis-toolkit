@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from toolkit.interactive import ask_choice, ask_yes_no
-
+from toolkit.interactive import ask_choice
 
 
 def new_batch_stats() -> dict[str, list[str]]:
     return defaultdict(list)  # type: ignore[return-value]
-
 
 
 def add_batch_item(stats: dict[str, list[str]], category: str, value: str) -> None:
@@ -16,12 +14,18 @@ def add_batch_item(stats: dict[str, list[str]], category: str, value: str) -> No
         stats[category].append(value)
 
 
-
 def print_batch_summary(workflow: str, stats: dict[str, list[str]]) -> None:
     print("\n" + "=" * 80)
     print(f"Batch summary: {workflow}")
     print("=" * 80)
-    for category in ["analyzed", "reviewed", "corrected", "failed", "outputs", "problematic"]:
+    for category in [
+        "analyzed",
+        "reviewed",
+        "corrected",
+        "failed",
+        "outputs",
+        "problematic",
+    ]:
         values = stats.get(category, [])
         if values:
             print(f"{category.capitalize()}: {len(values)}")
@@ -29,7 +33,6 @@ def print_batch_summary(workflow: str, stats: dict[str, list[str]]) -> None:
                 print(f"  - {value}")
     if not any(stats.get(category) for category in stats):
         print("No items were processed.")
-
 
 
 def ask_problematic_action() -> str:

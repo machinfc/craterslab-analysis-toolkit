@@ -17,7 +17,6 @@ def safe_input(prompt: str) -> str:
         raise SystemExit(1)
 
 
-
 def ask_text(prompt: str, default: str | None = None, allow_empty: bool = False) -> str:
     while True:
         suffix = f" [{default}]" if default is not None else ""
@@ -31,7 +30,6 @@ def ask_text(prompt: str, default: str | None = None, allow_empty: bool = False)
         print("Please enter a value.")
 
 
-
 def ask_int(prompt: str, default: int | None = None) -> int:
     while True:
         raw = ask_text(prompt, str(default) if default is not None else None)
@@ -41,7 +39,6 @@ def ask_int(prompt: str, default: int | None = None) -> int:
             print("Please enter an integer.")
 
 
-
 def ask_float(prompt: str, default: float | None = None) -> float:
     while True:
         raw = ask_text(prompt, str(default) if default is not None else None)
@@ -49,7 +46,6 @@ def ask_float(prompt: str, default: float | None = None) -> float:
             return float(raw)
         except ValueError:
             print("Please enter a number.")
-
 
 
 def ask_yes_no(prompt: str, default: bool = False) -> bool:
@@ -63,7 +59,6 @@ def ask_yes_no(prompt: str, default: bool = False) -> bool:
         if value in {"n", "no"}:
             return False
         print("Please answer yes or no.")
-
 
 
 def ask_choice(prompt: str, options: dict[str, str], default: str | None = None) -> str:
@@ -86,7 +81,6 @@ def ask_choice(prompt: str, options: dict[str, str], default: str | None = None)
         print("Please choose one of the listed options.")
 
 
-
 def ask_dataset(default: str = "fluized") -> str:
     options = {
         key: f"{info['label']} ({info['file_type']})"
@@ -97,15 +91,15 @@ def ask_dataset(default: str = "fluized") -> str:
     return normalize_dataset_name(selected)
 
 
-
 def ask_range(default_start: int, default_end: int) -> tuple[int, int]:
     start = ask_int("Start index", default_start)
     end = ask_int("End index", default_end)
     return start, end
 
 
-
-def ask_bbox(default: tuple[int, int, int, int] | None = None) -> tuple[int, int, int, int]:
+def ask_bbox(
+    default: tuple[int, int, int, int] | None = None
+) -> tuple[int, int, int, int]:
     default_text = ",".join(map(str, default)) if default is not None else None
     while True:
         raw = ask_text("Manual crop (x,y,w,h)", default_text)
@@ -116,7 +110,6 @@ def ask_bbox(default: tuple[int, int, int, int] | None = None) -> tuple[int, int
             return tuple(parts)  # type: ignore[return-value]
         except ValueError:
             print("Use four integers separated by commas, for example: 10,50,100,100")
-
 
 
 def ask_point(prompt: str, default: tuple[int, int] | None = None) -> tuple[int, int]:
@@ -130,7 +123,6 @@ def ask_point(prompt: str, default: tuple[int, int] | None = None) -> tuple[int,
             return tuple(parts)  # type: ignore[return-value]
         except ValueError:
             print("Use two integers separated by commas, for example: 107,146")
-
 
 
 def ask_optional_point(prompt: str) -> tuple[int, int] | None:
@@ -147,7 +139,6 @@ def ask_optional_point(prompt: str) -> tuple[int, int] | None:
         return None
 
 
-
 def ask_file_mode(default: str = "all") -> str:
     return ask_choice(
         "What do you want to process",
@@ -158,7 +149,6 @@ def ask_file_mode(default: str = "all") -> str:
         },
         default=default,
     )
-
 
 
 def ask_plot_mode(default: str = "none") -> str:
@@ -172,7 +162,6 @@ def ask_plot_mode(default: str = "none") -> str:
         },
         default=default,
     )
-
 
 
 def ask_visualizer_mode(default: str = "all") -> str:
@@ -190,11 +179,9 @@ def ask_visualizer_mode(default: str = "all") -> str:
     )
 
 
-
 def plot_flags_from_mode(plot_mode: str) -> tuple[bool, bool]:
     normalized = plot_mode.lower()
     return normalized in {"2d", "both"}, normalized in {"3d", "both"}
-
 
 
 def visualization_flags_from_mode(mode: str) -> tuple[bool, bool, bool]:
@@ -205,11 +192,12 @@ def visualization_flags_from_mode(mode: str) -> tuple[bool, bool, bool]:
     return show_2d, show_profile, show_3d
 
 
-
 def choose_filename_from_directory(directory: Path, extensions: Iterable[str]) -> str:
     allowed = {ext.lower() for ext in extensions}
     candidates = sorted(
-        path.name for path in directory.iterdir() if path.is_file() and path.suffix.lower() in allowed
+        path.name
+        for path in directory.iterdir()
+        if path.is_file() and path.suffix.lower() in allowed
     )
     if not candidates:
         raise FileNotFoundError(f"No matching files found in {directory}")

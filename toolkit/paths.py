@@ -60,17 +60,14 @@ def normalize_dataset_name(name: str) -> str:
     return DATASET_ALIASES[key]
 
 
-
 def ensure_directory(path: Path | str) -> Path:
     directory = Path(path)
     directory.mkdir(parents=True, exist_ok=True)
     return directory
 
 
-
 def get_dataset_dir(name: str) -> Path:
     return DATASET_INFO[normalize_dataset_name(name)]["dir"]
-
 
 
 def get_dataset_info(name: str) -> dict:

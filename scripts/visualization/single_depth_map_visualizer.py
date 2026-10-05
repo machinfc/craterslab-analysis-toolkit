@@ -10,7 +10,9 @@ TARGET = PROJECT_ROOT / "scripts" / "visualization" / "depth_map_visualizer.py"
 
 def main() -> None:
     print("[INFO] single_depth_map_visualizer.py is kept as a compatibility wrapper.")
-    print("[INFO] Please use scripts/visualization/depth_map_visualizer.py for the unified visual review workflow.")
+    print(
+        "[INFO] Please use scripts/visualization/depth_map_visualizer.py for the unified visual review workflow."
+    )
     command = [sys.executable, str(TARGET)]
     if len(sys.argv) > 1:
         command.extend(["--mode", "single", *sys.argv[1:]])

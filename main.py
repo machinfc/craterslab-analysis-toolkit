@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import argparse
-import os
 import subprocess
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 from toolkit.interactive import ask_choice, ask_yes_no
-from toolkit.session_summary import ensure_session_summary_path
+
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 TOOLS = {
     "analyze": {
@@ -20,7 +16,10 @@ TOOLS = {
     },
     "visualize": {
         "label": "Review crater data visually",
-        "script": PROJECT_ROOT / "scripts" / "visualization" / "depth_map_visualizer.py",
+        "script": PROJECT_ROOT
+        / "scripts"
+        / "visualization"
+        / "depth_map_visualizer.py",
     },
     "fix": {
         "label": "Fix crater geometry / classification",
@@ -45,9 +44,10 @@ TOOLS = {
 }
 
 
-
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Central launcher for the Craterslab Analysis Toolkit.")
+    parser = argparse.ArgumentParser(
+        description="Central launcher for the Craterslab Analysis Toolkit."
+    )
     parser.add_argument(
         "tool",
         nargs="?",
@@ -55,9 +55,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="menu",
         help="Tool to launch directly. Leave empty to open the menu.",
     )
-    parser.add_argument("tool_args", nargs=argparse.REMAINDER, help="Extra arguments forwarded to the tool.")
+    parser.add_argument(
+        "tool_args",
+        nargs=argparse.REMAINDER,
+        help="Extra arguments forwarded to the tool.",
+    )
     return parser.parse_args(argv)
-
 
 
 def launch_tool(tool_key: str, extra_args: list[str] | None = None) -> int:
@@ -66,7 +69,6 @@ def launch_tool(tool_key: str, extra_args: list[str] | None = None) -> int:
     print(f"\nRunning: {tool['label']}")
     print(f"Command: {' '.join(command)}")
     return subprocess.run(command, check=False).returncode
-
 
 
 def interactive_menu() -> None:
@@ -89,7 +91,6 @@ def interactive_menu() -> None:
         print(f"Tool finished with exit code: {return_code}")
         if not ask_yes_no("Return to main menu", default=True):
             return
-
 
 
 def main() -> None:

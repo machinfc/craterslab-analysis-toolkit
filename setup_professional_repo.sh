@@ -21,6 +21,7 @@ source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
+pip install -e .
 
 echo
 echo "[OK] Environment ready. Recommended next steps:"

@@ -1,25 +1,30 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from pathlib import Path
 
 from craterslab.classification import SurfaceType
 from craterslab.craters import Surface
 from craterslab.sensors import DepthMap, SensorResolution
-from craterslab.visuals import plot_2D, plot_3D
-from toolkit.batch_review import add_batch_item, ask_problematic_action, new_batch_stats, print_batch_summary
-from toolkit.error_handling import append_error_log, ask_error_action, format_exception_text, print_processing_error
+
+from toolkit.batch_review import (
+    add_batch_item,
+    ask_problematic_action,
+    new_batch_stats,
+    print_batch_summary,
+)
+from toolkit.error_handling import (
+    append_error_log,
+    ask_error_action,
+    format_exception_text,
+    print_processing_error,
+)
 from toolkit.exporters import build_observable_row, write_observables_csv
 from toolkit.fix_logging import append_fix_log
 from toolkit.interactive import (
     ask_bbox,
     ask_choice,
-    ask_dataset,
     ask_file_mode,
     ask_float,
     ask_int,
@@ -31,9 +36,20 @@ from toolkit.interactive import (
     plot_flags_from_mode,
 )
 from toolkit.output_control import build_analysis_output_path, resolve_output_path
-from toolkit.session_summary import append_session_entry, append_session_note, ensure_session_summary_path
-from toolkit.paths import OUTPUT_DIR, get_dataset_dir, get_dataset_info, normalize_dataset_name
+from toolkit.paths import (
+    OUTPUT_DIR,
+    get_dataset_dir,
+    get_dataset_info,
+    normalize_dataset_name,
+)
+from toolkit.session_summary import (
+    append_session_entry,
+    append_session_note,
+    ensure_session_summary_path,
+)
 from toolkit.visualization_helpers import show_review_figures
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 ALL_OBSERVABLES = ["D", "d_max", "V_in", "V_ex", "V_exc", "epsilon", "V_cp", "H_cp"]
 SURFACE_TYPE_OPTIONS = {
@@ -48,13 +64,13 @@ def parse_surface_type(value: str) -> SurfaceType:
     return SurfaceType[value.upper()]
 
 
-
 def parse_bbox(value: str) -> tuple[int, int, int, int]:
     parts = [int(part.strip()) for part in value.split(",")]
     if len(parts) != 4:
-        raise argparse.ArgumentTypeError("Bounding box must contain 4 integers: x,y,w,h")
+        raise argparse.ArgumentTypeError(
+            "Bounding box must contain 4 integers: x,y,w,h"
+        )
     return tuple(parts)  # type: ignore[return-value]
-
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -67,9 +83,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--start", type=int, default=1)
     parser.add_argument("--end", type=int, default=1)
     parser.add_argument("--filename", default=None)
-    parser.add_argument("--surface-type", type=parse_surface_type, default=SurfaceType.COMPLEX_CRATER)
+    parser.add_argument(
+        "--surface-type", type=parse_surface_type, default=SurfaceType.COMPLEX_CRATER
+    )
     parser.add_argument("--ellipse-points", type=int, default=20)
-    parser.add_argument("--crop-mode", choices=["bbox", "auto", "borders", "none"], default="bbox")
+    parser.add_argument(
+        "--crop-mode", choices=["bbox", "auto", "borders", "none"], default="bbox"
+    )
     parser.add_argument("--bbox", type=parse_bbox, default=(10, 50, 100, 100))
     parser.add_argument("--crop-ratio", type=float, default=0.6)
     parser.add_argument("--plot2d", action="store_true")
@@ -96,14 +116,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-
 def iter_indices(start: int, end: int):
     step = 1 if end >= start else -1
     return range(start, end + step, step)
 
 
-
-def build_interactive_batch_args(initial: argparse.Namespace | None = None) -> argparse.Namespace:
+def build_interactive_batch_args(
+    initial: argparse.Namespace | None = None,
+) -> argparse.Namespace:
     initial = initial or argparse.Namespace(dataset="compacted", filename=None)
     dataset = normalize_dataset_name(getattr(initial, "dataset", "compacted"))
     dataset_info = get_dataset_info(dataset)
@@ -114,7 +134,9 @@ def build_interactive_batch_args(initial: argparse.Namespace | None = None) -> a
     filename = getattr(initial, "filename", None)
 
     if mode == "single":
-        filename = filename or choose_filename_from_directory(get_dataset_dir(dataset), [f".{dataset_info['file_type']}"])
+        filename = filename or choose_filename_from_directory(
+            get_dataset_dir(dataset), [f".{dataset_info['file_type']}"]
+        )
     elif mode == "range":
         prefix = ask_text("File prefix", prefix)
         start, end = ask_range(start, end)
@@ -129,7 +151,9 @@ def build_interactive_batch_args(initial: argparse.Namespace | None = None) -> a
             "borders": "Crop borders by ratio",
             "none": "No crop",
         },
-        default=getattr(initial, "crop_mode", "bbox" if dataset != "quickmap" else "borders"),
+        default=getattr(
+            initial, "crop_mode", "bbox" if dataset != "quickmap" else "borders"
+        ),
     )
     bbox = getattr(initial, "bbox", (10, 50, 100, 100))
     crop_ratio = getattr(initial, "crop_ratio", 0.15 if dataset == "quickmap" else 0.6)
@@ -187,9 +211,10 @@ def build_interactive_batch_args(initial: argparse.Namespace | None = None) -> a
         zres=zres,
         scale=scale,
         z_shift=z_shift,
-        output=Path(ask_text("Output CSV path", str(getattr(initial, "output", default_output)))),
+        output=Path(
+            ask_text("Output CSV path", str(getattr(initial, "output", default_output)))
+        ),
     )
-
 
 
 def collect_file_paths(args: argparse.Namespace) -> list[Path]:
@@ -202,9 +227,13 @@ def collect_file_paths(args: argparse.Namespace) -> list[Path]:
         return [dataset_dir / args.filename]
     prefix = args.prefix or dataset_info["default_prefix"]
     if args.mode == "all":
-        return sorted(path for path in dataset_dir.glob(f"{prefix}_*{suffix}") if path.is_file())
-    return [dataset_dir / f"{prefix}_{index}{suffix}" for index in iter_indices(args.start, args.end)]
-
+        return sorted(
+            path for path in dataset_dir.glob(f"{prefix}_*{suffix}") if path.is_file()
+        )
+    return [
+        dataset_dir / f"{prefix}_{index}{suffix}"
+        for index in iter_indices(args.start, args.end)
+    ]
 
 
 def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
@@ -220,7 +249,6 @@ def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
     )
 
 
-
 def load_depth_map(file_path: Path, args: argparse.Namespace) -> DepthMap:
     dataset = normalize_dataset_name(args.dataset)
     dataset_dir = get_dataset_dir(dataset)
@@ -228,8 +256,15 @@ def load_depth_map(file_path: Path, args: argparse.Namespace) -> DepthMap:
         resolution = build_resolution(args)
         if resolution is None:
             raise ValueError("QuickMap fixing requires valid resolution values")
-        print("Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data.")
-        depth_map = DepthMap.from_xyz_file(file_path.name, data_folder=str(dataset_dir), resolution=resolution, z_shift=args.z_shift)
+        print(
+            "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
+        )
+        depth_map = DepthMap.from_xyz_file(
+            file_path.name,
+            data_folder=str(dataset_dir),
+            resolution=resolution,
+            z_shift=args.z_shift,
+        )
     else:
         depth_map = DepthMap.load(file_path)
 
@@ -240,7 +275,6 @@ def load_depth_map(file_path: Path, args: argparse.Namespace) -> DepthMap:
     elif args.crop_mode == "bbox":
         depth_map.crop(args.bbox)
     return depth_map
-
 
 
 def display_fix_summary(filename: str, surface: Surface) -> None:
@@ -255,8 +289,9 @@ def display_fix_summary(filename: str, surface: Surface) -> None:
             print(f"  {observable}: not found")
 
 
-
-def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_output_path: Path) -> list[object] | None:
+def review_single_file(
+    file_path: Path, base_args: argparse.Namespace, batch_output_path: Path
+) -> list[object] | None:
     file_args = argparse.Namespace(**vars(base_args))
     file_args.filename = file_path.name
     while True:
@@ -294,7 +329,11 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
                         "z_shift": getattr(file_args, "z_shift", None),
                     },
                     observables={
-                        observable: surface.observables[observable].value if observable in surface.observables else "not found"
+                        observable: (
+                            surface.observables[observable].value
+                            if observable in surface.observables
+                            else "not found"
+                        )
                         for observable in ALL_OBSERVABLES
                     },
                     output_path=batch_output_path,
@@ -305,11 +344,16 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
             print("\nLet's adjust the fixer parameters and try again.")
             surface_key = ask_choice(
                 "Select corrected surface type",
-                {key: value.name.replace("_", " ").title() for key, value in SURFACE_TYPE_OPTIONS.items()},
+                {
+                    key: value.name.replace("_", " ").title()
+                    for key, value in SURFACE_TYPE_OPTIONS.items()
+                },
                 default=file_args.surface_type.name.lower(),
             )
             file_args.surface_type = SURFACE_TYPE_OPTIONS[surface_key]
-            file_args.ellipse_points = ask_int("Ellipse points", file_args.ellipse_points)
+            file_args.ellipse_points = ask_int(
+                "Ellipse points", file_args.ellipse_points
+            )
             file_args.crop_mode = ask_choice(
                 "Crop mode",
                 {
@@ -329,7 +373,9 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
                     "Z shift (lunar geodesy vertical offset used to align the LROC/QuickMap zero level)",
                     file_args.z_shift,
                 )
-            plot_mode = ask_plot_mode(default="both" if file_args.plot2d and file_args.plot3d else "none")
+            plot_mode = ask_plot_mode(
+                default="both" if file_args.plot2d and file_args.plot3d else "none"
+            )
             file_args.plot2d, file_args.plot3d = plot_flags_from_mode(plot_mode)
 
         except Exception as exception:  # noqa: BLE001
@@ -341,23 +387,39 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
                 exception=exception,
             )
             print(f"Logged error details to: {log_path}")
-            append_session_entry(workflow="fixer", dataset=normalize_dataset_name(file_args.dataset), category="failed", value=file_path.name)
+            append_session_entry(
+                workflow="fixer",
+                dataset=normalize_dataset_name(file_args.dataset),
+                category="failed",
+                value=file_path.name,
+            )
             if hasattr(base_args, "stats"):
                 add_batch_item(base_args.stats, "failed", file_path.name)
                 add_batch_item(base_args.stats, "problematic", file_path.name)
             while True:
-                action = ask_error_action(allow_fix=False, allow_edit=True, allow_skip=True, allow_stop=True, default="retry")
+                action = ask_error_action(
+                    allow_fix=False,
+                    allow_edit=True,
+                    allow_skip=True,
+                    allow_stop=True,
+                    default="retry",
+                )
                 if action == "details":
                     print(format_exception_text(exception))
                     continue
                 if action == "edit":
                     surface_key = ask_choice(
                         "Select corrected surface type",
-                        {key: value.name.replace("_", " ").title() for key, value in SURFACE_TYPE_OPTIONS.items()},
+                        {
+                            key: value.name.replace("_", " ").title()
+                            for key, value in SURFACE_TYPE_OPTIONS.items()
+                        },
                         default=file_args.surface_type.name.lower(),
                     )
                     file_args.surface_type = SURFACE_TYPE_OPTIONS[surface_key]
-                    file_args.ellipse_points = ask_int("Ellipse points", file_args.ellipse_points)
+                    file_args.ellipse_points = ask_int(
+                        "Ellipse points", file_args.ellipse_points
+                    )
                     file_args.crop_mode = ask_choice(
                         "Crop mode",
                         {
@@ -371,7 +433,9 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
                     if file_args.crop_mode == "bbox":
                         file_args.bbox = ask_bbox(file_args.bbox)
                     elif file_args.crop_mode == "borders":
-                        file_args.crop_ratio = ask_float("Crop ratio", file_args.crop_ratio)
+                        file_args.crop_ratio = ask_float(
+                            "Crop ratio", file_args.crop_ratio
+                        )
                     if normalize_dataset_name(file_args.dataset) == "quickmap":
                         file_args.xres = ask_float("X resolution", file_args.xres)
                         file_args.yres = ask_float("Y resolution", file_args.yres)
@@ -381,7 +445,11 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
                             "Z shift (lunar geodesy vertical offset used to align the LROC/QuickMap zero level)",
                             file_args.z_shift,
                         )
-                    plot_mode = ask_plot_mode(default="both" if file_args.plot2d and file_args.plot3d else "none")
+                    plot_mode = ask_plot_mode(
+                        default=(
+                            "both" if file_args.plot2d and file_args.plot3d else "none"
+                        )
+                    )
                     file_args.plot2d, file_args.plot3d = plot_flags_from_mode(plot_mode)
                     break
                 if action == "retry":
@@ -391,10 +459,13 @@ def review_single_file(file_path: Path, base_args: argparse.Namespace, batch_out
                 raise SystemExit(1)
 
 
-
 def run_batch_fix(args: argparse.Namespace) -> tuple[Path, list[list[object]]]:
     session_path = ensure_session_summary_path()
-    append_session_note("fixer", f"Started fixer run (mode={args.mode})", dataset=normalize_dataset_name(args.dataset))
+    append_session_note(
+        "fixer",
+        f"Started fixer run (mode={args.mode})",
+        dataset=normalize_dataset_name(args.dataset),
+    )
     print(f"Session summary: {session_path}")
     output_path = args.output or build_analysis_output_path(
         OUTPUT_DIR,
@@ -405,7 +476,9 @@ def run_batch_fix(args: argparse.Namespace) -> tuple[Path, list[list[object]]]:
         end=None if args.mode != "range" else args.end,
         prefix=args.prefix,
     )
-    output_path = resolve_output_path(output_path, overwrite=args.overwrite, prompt_user=True)
+    output_path = resolve_output_path(
+        output_path, overwrite=args.overwrite, prompt_user=True
+    )
 
     rows: list[list[object]] = []
     stats = new_batch_stats()
@@ -438,13 +511,22 @@ def run_batch_fix(args: argparse.Namespace) -> tuple[Path, list[list[object]]]:
                     "z_shift": getattr(args, "z_shift", None),
                 },
                 observables={
-                    observable: surface.observables[observable].value if observable in surface.observables else "not found"
+                    observable: (
+                        surface.observables[observable].value
+                        if observable in surface.observables
+                        else "not found"
+                    )
                     for observable in ALL_OBSERVABLES
                 },
                 output_path=output_path,
             )
             print(f"Logged correction details to: {log_path}")
-            append_session_entry(workflow="fixer", dataset=normalize_dataset_name(args.dataset), category="corrected", value=file_path.name)
+            append_session_entry(
+                workflow="fixer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="corrected",
+                value=file_path.name,
+            )
             add_batch_item(stats, "corrected", file_path.name)
 
         if row is not None:
@@ -455,16 +537,22 @@ def run_batch_fix(args: argparse.Namespace) -> tuple[Path, list[list[object]]]:
                 break
 
     output_path = write_observables_csv(output_path, ALL_OBSERVABLES, rows)
-    append_session_entry(workflow="fixer", dataset=normalize_dataset_name(args.dataset), category="outputs", value=str(output_path))
+    append_session_entry(
+        workflow="fixer",
+        dataset=normalize_dataset_name(args.dataset),
+        category="outputs",
+        value=str(output_path),
+    )
     add_batch_item(stats, "outputs", str(output_path))
     print(f"Saved corrected observables to: {output_path}")
     print_batch_summary("fixer", stats)
     if getattr(args, "interactive", False) and stats.get("problematic"):
         if ask_problematic_action() == "reopen":
             for filename in stats.get("problematic", []):
-                review_single_file(get_dataset_dir(args.dataset) / filename, args, output_path)
+                review_single_file(
+                    get_dataset_dir(args.dataset) / filename, args, output_path
+                )
     return output_path, rows
-
 
 
 def main() -> None:

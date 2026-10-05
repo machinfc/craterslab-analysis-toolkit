@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 from toolkit.interactive import ask_choice, ask_yes_no
 
 
-def rows_to_records(rows: Sequence[Sequence[object]], observables: Sequence[str]) -> list[dict[str, object]]:
+def rows_to_records(
+    rows: Sequence[Sequence[object]], observables: Sequence[str]
+) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
     for row in rows:
         record = {"filename": row[0], "type": row[1]}
@@ -15,7 +17,6 @@ def rows_to_records(rows: Sequence[Sequence[object]], observables: Sequence[str]
             record[observable] = value
         records.append(record)
     return records
-
 
 
 def interactive_observable_plotting(
@@ -32,7 +33,9 @@ def interactive_observable_plotting(
 
     while True:
         print("\nAvailable observables for plotting:")
-        x_observable = ask_choice("Select X observable", options, default=observables[0])
+        x_observable = ask_choice(
+            "Select X observable", options, default=observables[0]
+        )
         y_observable = ask_choice(
             "Select Y observable",
             options,

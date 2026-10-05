@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from matplotlib import pyplot as plt
-
 from craterslab.ellipse import EllipseVisualConfig
 from craterslab.visuals import plot_2D, plot_3D, plot_profile
-
+from matplotlib import pyplot as plt
 
 
 def profile_supports_slopes(profile) -> bool:
@@ -15,12 +13,10 @@ def profile_supports_slopes(profile) -> bool:
     return all(hasattr(profile, attr) for attr in ("t1", "t2", "b1", "b2"))
 
 
-
 def plot_profile_safe(profile, block: bool = True) -> bool:
     draw_slopes = profile_supports_slopes(profile)
     plot_profile(profile, draw_slopes=draw_slopes, block=block)
     return draw_slopes
-
 
 
 def show_review_figures(
@@ -47,7 +43,11 @@ def show_review_figures(
         slopes_drawn = plot_profile_safe(profile, block=False)
 
     if show_3d:
-        if surface is not None and getattr(surface, "observables", None) and "mean_h_rim" in surface.observables:
+        if (
+            surface is not None
+            and getattr(surface, "observables", None)
+            and "mean_h_rim" in surface.observables
+        ):
             ellipse_config = EllipseVisualConfig(
                 color="blue",
                 fill=True,
@@ -62,7 +62,12 @@ def show_review_figures(
                 block=False,
             )
         else:
-            plot_3D(depth_map, ellipse=ellipse_model, preview_scale=preview_scale, block=False)
+            plot_3D(
+                depth_map,
+                ellipse=ellipse_model,
+                preview_scale=preview_scale,
+                block=False,
+            )
 
     if show_2d or show_profile or show_3d:
         plt.show(block=True)

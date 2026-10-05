@@ -2,17 +2,8 @@ from __future__ import annotations
 
 import argparse
 import random
-from pathlib import Path
-import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
-from keras.utils import to_categorical
-from sklearn.model_selection import train_test_split
-
 from craterslab.classification import (
     NUM_CLASSES,
     get_trained_model,
@@ -21,6 +12,9 @@ from craterslab.classification import (
     save_trained_model,
 )
 from craterslab.sensors import DepthMap
+from keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+
 from toolkit.paths import get_dataset_dir
 
 SIMPLE_INDICES = [1, 2, 3, 4, 5, 6, 7, 8, 26, 27, 29, 31, 35, 42, 43, 48, 49, 51]
@@ -66,7 +60,9 @@ def main() -> None:
             "id": 1,
         },
         "complex_craters": {
-            "files": [f"fluized_{i}.npz" for i in range(1, 52) if i not in SIMPLE_INDICES]
+            "files": [
+                f"fluized_{i}.npz" for i in range(1, 52) if i not in SIMPLE_INDICES
+            ]
             + [f"compacted_{i}.npz" for i in range(25, 50)],
             "id": 2,
         },

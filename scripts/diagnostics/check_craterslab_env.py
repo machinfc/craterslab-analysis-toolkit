@@ -10,8 +10,6 @@ from pathlib import Path
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 PACKAGES = [
     "craterslab",
@@ -134,7 +132,9 @@ def diagnose(args: argparse.Namespace) -> None:
     def create_dummy_depth_map():
         from craterslab.sensors import DepthMap, SensorResolution
 
-        dm = DepthMap(np.zeros((100, 100), dtype=float), SensorResolution(1.0, 1.0, 1.0, "mm"))
+        dm = DepthMap(
+            np.zeros((100, 100), dtype=float), SensorResolution(1.0, 1.0, 1.0, "mm")
+        )
         return f"dummy depth map shape={dm.map.shape}"
 
     run_check("create dummy depth map", create_dummy_depth_map, args.full_traceback)
@@ -148,7 +148,9 @@ def diagnose(args: argparse.Namespace) -> None:
             dm = DepthMap.load(sample_npz)
             return f"loaded npz shape={dm.map.shape} from {sample_npz.name}"
 
-        run_check(f"load sample npz ({sample_npz.name})", load_npz_file, args.full_traceback)
+        run_check(
+            f"load sample npz ({sample_npz.name})", load_npz_file, args.full_traceback
+        )
 
         def classify_npz_file():
             from craterslab.craters import Surface
@@ -179,11 +181,15 @@ def diagnose(args: argparse.Namespace) -> None:
             )
             return f"loaded xyz shape={dm.map.shape} from {sample_xyz.name}"
 
-        run_check(f"load sample xyz ({sample_xyz.name})", load_xyz_file, args.full_traceback)
+        run_check(
+            f"load sample xyz ({sample_xyz.name})", load_xyz_file, args.full_traceback
+        )
 
     print("\nRecommendations:")
     print("  - Stable baseline for this project: Python 3.11.x")
-    print("  - For Python 3.12 use a clean venv and install compatible versions together")
+    print(
+        "  - For Python 3.12 use a clean venv and install compatible versions together"
+    )
     print("  - Suggested stack: craterslab>=0.2.8, keras>=3, tensorflow>=2.16.1")
 
 

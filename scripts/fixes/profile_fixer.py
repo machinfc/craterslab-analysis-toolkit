@@ -1,25 +1,24 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from pathlib import Path
 
 from craterslab.ellipse import EllipticalModel
 from craterslab.profiles import Profile
 from craterslab.sensors import DepthMap, SensorResolution
-from craterslab.visuals import plot_2D, plot_3D
-from toolkit.error_handling import append_error_log, ask_error_action, format_exception_text, print_processing_error
+
+from toolkit.error_handling import (
+    append_error_log,
+    ask_error_action,
+    format_exception_text,
+    print_processing_error,
+)
 from toolkit.exporters import write_profile_csv
 from toolkit.fix_logging import append_fix_log
-from toolkit.session_summary import append_session_entry, append_session_note, ensure_session_summary_path
 from toolkit.interactive import (
     ask_bbox,
     ask_choice,
-    ask_dataset,
     ask_float,
     ask_int,
     ask_optional_point,
@@ -29,8 +28,20 @@ from toolkit.interactive import (
     choose_filename_from_directory,
     plot_flags_from_mode,
 )
-from toolkit.paths import OUTPUT_DIR, get_dataset_dir, get_dataset_info, normalize_dataset_name
+from toolkit.paths import (
+    OUTPUT_DIR,
+    get_dataset_dir,
+    get_dataset_info,
+    normalize_dataset_name,
+)
+from toolkit.session_summary import (
+    append_session_entry,
+    append_session_note,
+    ensure_session_summary_path,
+)
 from toolkit.visualization_helpers import show_review_figures
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def parse_point(value: str) -> tuple[int, int]:
@@ -40,13 +51,13 @@ def parse_point(value: str) -> tuple[int, int]:
     return tuple(parts)  # type: ignore[return-value]
 
 
-
 def parse_bbox(value: str) -> tuple[int, int, int, int]:
     parts = [int(part.strip()) for part in value.split(",")]
     if len(parts) != 4:
-        raise argparse.ArgumentTypeError("Bounding box must contain 4 integers: x,y,w,h")
+        raise argparse.ArgumentTypeError(
+            "Bounding box must contain 4 integers: x,y,w,h"
+        )
     return tuple(parts)  # type: ignore[return-value]
-
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -56,7 +67,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataset", default="fluized")
     parser.add_argument("--filename", default=None)
     parser.add_argument("--ellipse-points", type=int, default=20)
-    parser.add_argument("--crop-mode", choices=["auto", "none", "borders", "bbox"], default="auto")
+    parser.add_argument(
+        "--crop-mode", choices=["auto", "none", "borders", "bbox"], default="auto"
+    )
     parser.add_argument("--crop-ratio", type=float, default=0.15)
     parser.add_argument("--bbox", type=parse_bbox, default=(10, 50, 100, 100))
     parser.add_argument("--manual-start", type=parse_point)
@@ -84,13 +97,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-
-def build_interactive_args(initial: argparse.Namespace | None = None) -> argparse.Namespace:
+def build_interactive_args(
+    initial: argparse.Namespace | None = None,
+) -> argparse.Namespace:
     initial = initial or argparse.Namespace(dataset="fluized", filename=None)
     dataset = normalize_dataset_name(getattr(initial, "dataset", "fluized"))
     dataset_info = get_dataset_info(dataset)
     suffix = f".{dataset_info['file_type']}"
-    filename = getattr(initial, "filename", None) or choose_filename_from_directory(get_dataset_dir(dataset), [suffix])
+    filename = getattr(initial, "filename", None) or choose_filename_from_directory(
+        get_dataset_dir(dataset), [suffix]
+    )
     ellipse_points = ask_int("Ellipse points", getattr(initial, "ellipse_points", 20))
     crop_mode = ask_choice(
         "Crop mode",
@@ -100,7 +116,9 @@ def build_interactive_args(initial: argparse.Namespace | None = None) -> argpars
             "bbox": "Manual crop using bounding box",
             "none": "No crop",
         },
-        default=getattr(initial, "crop_mode", "auto" if dataset != "quickmap" else "borders"),
+        default=getattr(
+            initial, "crop_mode", "auto" if dataset != "quickmap" else "borders"
+        ),
     )
     crop_ratio = getattr(initial, "crop_ratio", 0.15)
     bbox = getattr(initial, "bbox", (10, 50, 100, 100))
@@ -128,7 +146,9 @@ def build_interactive_args(initial: argparse.Namespace | None = None) -> argpars
         )
 
     default_output = OUTPUT_DIR / filename.replace(suffix, "_profileFixer.csv")
-    output = Path(ask_text("Output CSV path", str(getattr(initial, "output", default_output))))
+    output = Path(
+        ask_text("Output CSV path", str(getattr(initial, "output", default_output)))
+    )
 
     return argparse.Namespace(
         dataset=dataset,
@@ -152,7 +172,6 @@ def build_interactive_args(initial: argparse.Namespace | None = None) -> argpars
     )
 
 
-
 def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
     if normalize_dataset_name(args.dataset) != "quickmap":
         return None
@@ -163,7 +182,6 @@ def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
         args.zres if args.zres is not None else defaults["zres"],
         args.scale if args.scale is not None else defaults["scale"],
     )
-
 
 
 def load_depth_map(args: argparse.Namespace) -> DepthMap:
@@ -195,24 +213,33 @@ def load_depth_map(args: argparse.Namespace) -> DepthMap:
     return depth_map
 
 
-
 def run_profile_fix(args: argparse.Namespace) -> Path:
     session_path = ensure_session_summary_path()
-    append_session_note("profile fixer", "Started profile fixer run", dataset=normalize_dataset_name(args.dataset))
+    append_session_note(
+        "profile fixer",
+        "Started profile fixer run",
+        dataset=normalize_dataset_name(args.dataset),
+    )
     print(f"Session summary: {session_path}")
     while True:
         try:
             depth_map = load_depth_map(args)
             ellipse_model = EllipticalModel(depth_map, args.ellipse_points)
             if args.manual_start and args.manual_end:
-                profile = Profile(depth_map, start_point=args.manual_start, end_point=args.manual_end)
+                profile = Profile(
+                    depth_map, start_point=args.manual_start, end_point=args.manual_end
+                )
             else:
                 profile = ellipse_model.max_profile()
 
             m1, m2 = profile.slopes()
             print(f"Computed slopes: m1={m1}, m2={m2}")
 
-            if getattr(args, "plot2d", False) or getattr(args, "plot3d", False) or args.plot:
+            if (
+                getattr(args, "plot2d", False)
+                or getattr(args, "plot3d", False)
+                or args.plot
+            ):
                 show_review_figures(
                     depth_map=depth_map,
                     profile=profile,
@@ -224,7 +251,9 @@ def run_profile_fix(args: argparse.Namespace) -> Path:
                     preview_scale=(1, 1, 4),
                 )
 
-            output_path = args.output or (OUTPUT_DIR / f"{args.filename.rsplit('.', 1)[0]}_profileFixer.csv")
+            output_path = args.output or (
+                OUTPUT_DIR / f"{args.filename.rsplit('.', 1)[0]}_profileFixer.csv"
+            )
             write_profile_csv(output_path, profile)
             log_path = append_fix_log(
                 script_name="profile_fixer.py",
@@ -249,12 +278,24 @@ def run_profile_fix(args: argparse.Namespace) -> Path:
             )
             print(f"Saved profile CSV to: {output_path}")
             print(f"Logged correction details to: {log_path}")
-            append_session_entry(workflow="profile fixer", dataset=normalize_dataset_name(args.dataset), category="corrected", value=args.filename)
-            append_session_entry(workflow="profile fixer", dataset=normalize_dataset_name(args.dataset), category="output", value=str(output_path))
+            append_session_entry(
+                workflow="profile fixer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="corrected",
+                value=args.filename,
+            )
+            append_session_entry(
+                workflow="profile fixer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="output",
+                value=str(output_path),
+            )
             return output_path
 
         except Exception as exception:  # noqa: BLE001
-            print_processing_error("profile fixer", args.filename or "<unknown>", exception)
+            print_processing_error(
+                "profile fixer", args.filename or "<unknown>", exception
+            )
             log_path = append_error_log(
                 workflow="profile fixer",
                 dataset=normalize_dataset_name(args.dataset),
@@ -262,11 +303,22 @@ def run_profile_fix(args: argparse.Namespace) -> Path:
                 exception=exception,
             )
             print(f"Logged error details to: {log_path}")
-            append_session_entry(workflow="profile fixer", dataset=normalize_dataset_name(args.dataset), category="failed", value=args.filename or "<unknown>")
+            append_session_entry(
+                workflow="profile fixer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="failed",
+                value=args.filename or "<unknown>",
+            )
             if not getattr(args, "interactive", False):
                 raise
             while True:
-                action = ask_error_action(allow_fix=False, allow_edit=True, allow_skip=False, allow_stop=True, default="retry")
+                action = ask_error_action(
+                    allow_fix=False,
+                    allow_edit=True,
+                    allow_skip=False,
+                    allow_stop=True,
+                    default="retry",
+                )
                 if action == "details":
                     print(format_exception_text(exception))
                     continue
@@ -274,7 +326,12 @@ def run_profile_fix(args: argparse.Namespace) -> Path:
                     args.ellipse_points = ask_int("Ellipse points", args.ellipse_points)
                     args.crop_mode = ask_choice(
                         "Crop mode",
-                        {"auto": "Automatic crop", "borders": "Crop borders by ratio", "bbox": "Manual crop using bounding box", "none": "No crop"},
+                        {
+                            "auto": "Automatic crop",
+                            "borders": "Crop borders by ratio",
+                            "bbox": "Manual crop using bounding box",
+                            "none": "No crop",
+                        },
                         default=args.crop_mode,
                     )
                     if args.crop_mode == "borders":
@@ -290,16 +347,19 @@ def run_profile_fix(args: argparse.Namespace) -> Path:
                             "Z shift (lunar geodesy vertical offset used to align the LROC/QuickMap zero level)",
                             args.z_shift,
                         )
-                    args.manual_start = ask_optional_point("Manual profile start point x,y")
+                    args.manual_start = ask_optional_point(
+                        "Manual profile start point x,y"
+                    )
                     args.manual_end = ask_optional_point("Manual profile end point x,y")
-                    plot_mode = ask_plot_mode(default="both" if args.plot2d and args.plot3d else "none")
+                    plot_mode = ask_plot_mode(
+                        default="both" if args.plot2d and args.plot3d else "none"
+                    )
                     args.plot2d, args.plot3d = plot_flags_from_mode(plot_mode)
                     args.plot = args.plot2d or args.plot3d
                     break
                 if action == "retry":
                     break
                 raise SystemExit(1)
-
 
 
 def interactive_loop(initial_args: argparse.Namespace | None = None) -> None:
@@ -326,10 +386,11 @@ def interactive_loop(initial_args: argparse.Namespace | None = None) -> None:
             args.bbox = ask_bbox(args.bbox)
         args.manual_start = ask_optional_point("Manual profile start point x,y")
         args.manual_end = ask_optional_point("Manual profile end point x,y")
-        plot_mode = ask_plot_mode(default="both" if args.plot2d and args.plot3d else "none")
+        plot_mode = ask_plot_mode(
+            default="both" if args.plot2d and args.plot3d else "none"
+        )
         args.plot2d, args.plot3d = plot_flags_from_mode(plot_mode)
         args.plot = args.plot2d or args.plot3d
-
 
 
 def main() -> None:

@@ -10,7 +10,9 @@ TARGET = PROJECT_ROOT / "scripts" / "analysis" / "data_analyzer.py"
 
 def main() -> None:
     print("[INFO] lroc_analyzer.py is kept as a compatibility wrapper.")
-    print("[INFO] Please use scripts/analysis/data_analyzer.py for the unified analyzer workflow.")
+    print(
+        "[INFO] Please use scripts/analysis/data_analyzer.py for the unified analyzer workflow."
+    )
     command = [sys.executable, str(TARGET)]
     if len(sys.argv) > 1:
         command.extend(["--dataset", "quickmap", *sys.argv[1:]])

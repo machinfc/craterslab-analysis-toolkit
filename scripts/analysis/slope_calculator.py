@@ -2,26 +2,52 @@ from __future__ import annotations
 
 import argparse
 import csv
-from pathlib import Path
 import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from pathlib import Path
 
 from craterslab.ellipse import EllipticalModel
 from craterslab.sensors import DepthMap
-from toolkit.error_handling import append_error_log, ask_error_action, format_exception_text, print_processing_error
-from toolkit.interactive import ask_choice, ask_dataset, ask_file_mode, ask_int, ask_plot_mode, ask_range, ask_text, ask_yes_no, choose_filename_from_directory, plot_flags_from_mode
+
+from toolkit.error_handling import (
+    append_error_log,
+    ask_error_action,
+    format_exception_text,
+    print_processing_error,
+)
+from toolkit.interactive import (
+    ask_dataset,
+    ask_file_mode,
+    ask_int,
+    ask_plot_mode,
+    ask_range,
+    ask_text,
+    choose_filename_from_directory,
+    plot_flags_from_mode,
+)
 from toolkit.output_control import build_analysis_output_path, resolve_output_path
-from toolkit.session_summary import append_session_entry, append_session_note, ensure_session_summary_path
-from toolkit.paths import OUTPUT_DIR, get_dataset_dir, get_dataset_info, normalize_dataset_name
+from toolkit.paths import (
+    OUTPUT_DIR,
+    get_dataset_dir,
+    get_dataset_info,
+    normalize_dataset_name,
+)
+from toolkit.session_summary import (
+    append_session_entry,
+    append_session_note,
+    ensure_session_summary_path,
+)
 from toolkit.visualization_helpers import show_review_figures
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Calculate slopes from automatically generated max profiles.")
-    parser.add_argument("--dataset", default="compacted", choices=["compacted", "fluized"])
+    parser = argparse.ArgumentParser(
+        description="Calculate slopes from automatically generated max profiles."
+    )
+    parser.add_argument(
+        "--dataset", default="compacted", choices=["compacted", "fluized"]
+    )
     parser.add_argument("--mode", choices=["all", "single", "range"], default="range")
     parser.add_argument("--prefix", default=None)
     parser.add_argument("--start", type=int, default=25)
@@ -37,11 +63,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-
 def iter_indices(start: int, end: int):
     step = 1 if end >= start else -1
     return range(start, end + step, step)
-
 
 
 def build_interactive_args() -> argparse.Namespace:
@@ -53,7 +77,9 @@ def build_interactive_args() -> argparse.Namespace:
     start, end = (25, 49) if dataset == "compacted" else (1, 51)
 
     if mode == "single":
-        filename = choose_filename_from_directory(get_dataset_dir(dataset), [f".{dataset_info['file_type']}"])
+        filename = choose_filename_from_directory(
+            get_dataset_dir(dataset), [f".{dataset_info['file_type']}"]
+        )
     elif mode == "range":
         prefix = ask_text("File prefix", prefix)
         start, end = ask_range(start, end)
@@ -97,7 +123,6 @@ def build_interactive_args() -> argparse.Namespace:
     )
 
 
-
 def collect_file_paths(args: argparse.Namespace) -> list[Path]:
     dataset_dir = get_dataset_dir(args.dataset)
     dataset_info = get_dataset_info(args.dataset)
@@ -108,12 +133,18 @@ def collect_file_paths(args: argparse.Namespace) -> list[Path]:
         return [dataset_dir / args.filename]
     prefix = args.prefix or dataset_info["default_prefix"]
     if args.mode == "all":
-        return sorted(path for path in dataset_dir.glob(f"{prefix}_*{suffix}") if path.is_file())
-    return [dataset_dir / f"{prefix}_{index}{suffix}" for index in iter_indices(args.start, args.end)]
+        return sorted(
+            path for path in dataset_dir.glob(f"{prefix}_*{suffix}") if path.is_file()
+        )
+    return [
+        dataset_dir / f"{prefix}_{index}{suffix}"
+        for index in iter_indices(args.start, args.end)
+    ]
 
 
-
-def process_one_file(file_path: Path, args: argparse.Namespace) -> tuple[list[object] | None, bool]:
+def process_one_file(
+    file_path: Path, args: argparse.Namespace
+) -> tuple[list[object] | None, bool]:
     while True:
         try:
             if not file_path.exists():
@@ -125,9 +156,18 @@ def process_one_file(file_path: Path, args: argparse.Namespace) -> tuple[list[ob
             profile = ellipse_model.max_profile()
             m1, m2 = profile.slopes()
             print(f"Processed {file_path.name}: m1={m1}, m2={m2}")
-            append_session_entry(workflow="slope calculator", dataset=normalize_dataset_name(args.dataset), category="analyzed", value=file_path.name)
+            append_session_entry(
+                workflow="slope calculator",
+                dataset=normalize_dataset_name(args.dataset),
+                category="analyzed",
+                value=file_path.name,
+            )
 
-            if getattr(args, "plot2d", False) or getattr(args, "plot3d", False) or args.plot:
+            if (
+                getattr(args, "plot2d", False)
+                or getattr(args, "plot3d", False)
+                or args.plot
+            ):
                 show_review_figures(
                     depth_map=depth_map,
                     profile=profile,
@@ -152,11 +192,18 @@ def process_one_file(file_path: Path, args: argparse.Namespace) -> tuple[list[ob
                 exception=exception,
             )
             print(f"Logged error details to: {log_path}")
-            append_session_entry(workflow="slope calculator", dataset=normalize_dataset_name(args.dataset), category="failed", value=file_path.name)
+            append_session_entry(
+                workflow="slope calculator",
+                dataset=normalize_dataset_name(args.dataset),
+                category="failed",
+                value=file_path.name,
+            )
             if not getattr(args, "interactive", False):
                 raise
             while True:
-                action = ask_error_action(allow_edit=False, allow_skip=True, allow_stop=True, default="skip")
+                action = ask_error_action(
+                    allow_edit=False, allow_skip=True, allow_stop=True, default="skip"
+                )
                 if action == "details":
                     print(format_exception_text(exception))
                     continue
@@ -175,11 +222,18 @@ def process_one_file(file_path: Path, args: argparse.Namespace) -> tuple[list[ob
                 exception=exception,
             )
             print(f"Logged error details to: {log_path}")
-            append_session_entry(workflow="slope calculator", dataset=normalize_dataset_name(args.dataset), category="failed", value=file_path.name)
+            append_session_entry(
+                workflow="slope calculator",
+                dataset=normalize_dataset_name(args.dataset),
+                category="failed",
+                value=file_path.name,
+            )
             if not getattr(args, "interactive", False):
                 raise
             while True:
-                action = ask_error_action(allow_edit=True, allow_skip=True, allow_stop=True, default="retry")
+                action = ask_error_action(
+                    allow_edit=True, allow_skip=True, allow_stop=True, default="retry"
+                )
                 if action == "details":
                     print(format_exception_text(exception))
                     continue
@@ -196,11 +250,14 @@ def process_one_file(file_path: Path, args: argparse.Namespace) -> tuple[list[ob
                 return None, False
 
 
-
 def main() -> None:
     args = parse_args() if len(sys.argv) > 1 else build_interactive_args()
     session_path = ensure_session_summary_path()
-    append_session_note("slope calculator", f"Started slope run (mode={args.mode})", dataset=normalize_dataset_name(args.dataset))
+    append_session_note(
+        "slope calculator",
+        f"Started slope run (mode={args.mode})",
+        dataset=normalize_dataset_name(args.dataset),
+    )
     print(f"Session summary: {session_path}")
     output_path = args.output or build_analysis_output_path(
         OUTPUT_DIR,
@@ -211,7 +268,9 @@ def main() -> None:
         end=None if args.mode != "range" else args.end,
         prefix=args.prefix,
     )
-    output_path = resolve_output_path(output_path, overwrite=args.overwrite, prompt_user=True)
+    output_path = resolve_output_path(
+        output_path, overwrite=args.overwrite, prompt_user=True
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     rows: list[list[object]] = []
@@ -227,7 +286,12 @@ def main() -> None:
         writer.writerow(["Filename", "m1", "m2"])
         writer.writerows(rows)
 
-    append_session_entry(workflow="slope calculator", dataset=normalize_dataset_name(args.dataset), category="output", value=str(output_path))
+    append_session_entry(
+        workflow="slope calculator",
+        dataset=normalize_dataset_name(args.dataset),
+        category="output",
+        value=str(output_path),
+    )
     print(f"Saved slopes CSV to: {output_path}")
 
 

@@ -1,19 +1,26 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import subprocess
 import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from pathlib import Path
 
 from craterslab.craters import Surface
 from craterslab.ellipse import EllipticalModel
 from craterslab.sensors import DepthMap, SensorResolution
-from toolkit.batch_review import add_batch_item, ask_problematic_action, new_batch_stats, print_batch_summary
-from toolkit.error_handling import append_error_log, ask_error_action, format_exception_text, print_processing_error
+
+from toolkit.batch_review import (
+    add_batch_item,
+    ask_problematic_action,
+    new_batch_stats,
+    print_batch_summary,
+)
+from toolkit.error_handling import (
+    append_error_log,
+    ask_error_action,
+    format_exception_text,
+    print_processing_error,
+)
 from toolkit.interactive import (
     ask_choice,
     ask_dataset,
@@ -23,18 +30,24 @@ from toolkit.interactive import (
     ask_range,
     ask_text,
     ask_visualizer_mode,
-    ask_yes_no,
     choose_filename_from_directory,
     visualization_flags_from_mode,
 )
 from toolkit.paths import get_dataset_dir, get_dataset_info, normalize_dataset_name
-from toolkit.session_summary import append_session_entry, append_session_note, ensure_session_summary_path
+from toolkit.session_summary import (
+    append_session_entry,
+    append_session_note,
+    ensure_session_summary_path,
+)
 from toolkit.visualization_helpers import show_review_figures
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Visualize crater files in 2D, 3D, and/or profile mode.")
+    parser = argparse.ArgumentParser(
+        description="Visualize crater files in 2D, 3D, and/or profile mode."
+    )
     parser.add_argument("--dataset", default="fluized")
     parser.add_argument("--mode", choices=["all", "single", "range"], default="range")
     parser.add_argument("--prefix", default=None)
@@ -60,11 +73,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-
 def iter_indices(start: int, end: int):
     step = 1 if end >= start else -1
     return range(start, end + step, step)
-
 
 
 def build_interactive_args() -> argparse.Namespace:
@@ -76,7 +87,9 @@ def build_interactive_args() -> argparse.Namespace:
     prefix = dataset_info["default_prefix"]
     start, end = 1, (51 if dataset != "quickmap" else 2)
     if mode == "single":
-        filename = choose_filename_from_directory(get_dataset_dir(dataset), [f".{dataset_info['file_type']}"])
+        filename = choose_filename_from_directory(
+            get_dataset_dir(dataset), [f".{dataset_info['file_type']}"]
+        )
     elif mode == "range":
         prefix = ask_text("File prefix", prefix)
         start, end = ask_range(start, end)
@@ -108,7 +121,9 @@ def build_interactive_args() -> argparse.Namespace:
         end=end,
         filename=filename,
         ellipse_points=ask_int("Ellipse points", 20),
-        crop_mode=ask_choice("Crop mode", {"auto": "Automatic crop", "none": "No crop"}, default="auto"),
+        crop_mode=ask_choice(
+            "Crop mode", {"auto": "Automatic crop", "none": "No crop"}, default="auto"
+        ),
         show_2d=show_2d,
         show_profile=show_profile,
         show_3d=show_3d,
@@ -122,23 +137,34 @@ def build_interactive_args() -> argparse.Namespace:
     )
 
 
-
 def adjust_visualizer_args(args: argparse.Namespace) -> None:
     args.ellipse_points = ask_int("Ellipse points", args.ellipse_points)
-    args.crop_mode = ask_choice("Crop mode", {"auto": "Automatic crop", "none": "No crop"}, default=args.crop_mode)
+    args.crop_mode = ask_choice(
+        "Crop mode",
+        {"auto": "Automatic crop", "none": "No crop"},
+        default=args.crop_mode,
+    )
     mode = ask_visualizer_mode(
         default=(
             "all"
             if args.show_2d and args.show_profile and args.show_3d
-            else "2d"
-            if args.show_2d and not args.show_profile and not args.show_3d
-            else "3d"
-            if args.show_3d and not args.show_2d and not args.show_profile
-            else "profile"
-            if args.show_profile and not args.show_2d and not args.show_3d
-            else "2d_profile"
-            if args.show_2d and args.show_profile and not args.show_3d
-            else "3d_profile"
+            else (
+                "2d"
+                if args.show_2d and not args.show_profile and not args.show_3d
+                else (
+                    "3d"
+                    if args.show_3d and not args.show_2d and not args.show_profile
+                    else (
+                        "profile"
+                        if args.show_profile and not args.show_2d and not args.show_3d
+                        else (
+                            "2d_profile"
+                            if args.show_2d and args.show_profile and not args.show_3d
+                            else "3d_profile"
+                        )
+                    )
+                )
+            )
         )
     )
     args.show_2d, args.show_profile, args.show_3d = visualization_flags_from_mode(mode)
@@ -147,7 +173,6 @@ def adjust_visualizer_args(args: argparse.Namespace) -> None:
             "Z shift (lunar geodesy vertical offset used to align the LROC/QuickMap zero level)",
             args.z_shift,
         )
-
 
 
 def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
@@ -162,7 +187,6 @@ def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
     )
 
 
-
 def collect_file_paths(args: argparse.Namespace) -> list[Path]:
     dataset_info = get_dataset_info(args.dataset)
     dataset_dir = get_dataset_dir(args.dataset)
@@ -173,17 +197,25 @@ def collect_file_paths(args: argparse.Namespace) -> list[Path]:
         return [dataset_dir / args.filename]
     prefix = args.prefix or dataset_info["default_prefix"]
     if args.mode == "all":
-        return sorted(path for path in dataset_dir.glob(f"{prefix}_*{suffix}") if path.is_file())
-    return [dataset_dir / f"{prefix}_{index}{suffix}" for index in iter_indices(args.start, args.end)]
+        return sorted(
+            path for path in dataset_dir.glob(f"{prefix}_*{suffix}") if path.is_file()
+        )
+    return [
+        dataset_dir / f"{prefix}_{index}{suffix}"
+        for index in iter_indices(args.start, args.end)
+    ]
 
 
-
-def load_depth_map(file_path: Path, args: argparse.Namespace, resolution: SensorResolution | None) -> DepthMap:
+def load_depth_map(
+    file_path: Path, args: argparse.Namespace, resolution: SensorResolution | None
+) -> DepthMap:
     dataset = normalize_dataset_name(args.dataset)
     if dataset == "quickmap":
         if resolution is None:
             raise ValueError("QuickMap visualization requires valid resolution values")
-        print("Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data.")
+        print(
+            "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
+        )
         depth_map = DepthMap.from_xyz_file(
             file_path.name,
             data_folder=str(file_path.parent),
@@ -195,7 +227,6 @@ def load_depth_map(file_path: Path, args: argparse.Namespace, resolution: Sensor
     if args.crop_mode == "auto":
         depth_map.auto_crop()
     return depth_map
-
 
 
 def print_scientific_summary(filename: str, surface: Surface, profile) -> None:
@@ -216,13 +247,21 @@ def print_scientific_summary(filename: str, surface: Surface, profile) -> None:
         print(f"  {observable_name}: {observable.value}")
 
 
-
 def launch_corresponding_fixer(dataset: str, filename: str) -> None:
     script = PROJECT_ROOT / "scripts" / "fixes" / "ellipse_fixer.py"
-    command = [sys.executable, str(script), "--interactive", "--dataset", normalize_dataset_name(dataset), "--mode", "single", "--filename", filename]
+    command = [
+        sys.executable,
+        str(script),
+        "--interactive",
+        "--dataset",
+        normalize_dataset_name(dataset),
+        "--mode",
+        "single",
+        "--filename",
+        filename,
+    ]
     print(f"Opening fixer: {' '.join(command)}")
     subprocess.run(command, check=False)
-
 
 
 def ask_post_visualization_action(single_mode: bool = False) -> str:
@@ -233,11 +272,17 @@ def ask_post_visualization_action(single_mode: bool = False) -> str:
     }
     if not single_mode:
         options = {"continue": "Continue to the next file", **options}
-    return ask_choice("Next step", options, default="continue" if not single_mode else "repeat")
+    return ask_choice(
+        "Next step", options, default="continue" if not single_mode else "repeat"
+    )
 
 
-
-def visualize_file(file_path: Path, args: argparse.Namespace, resolution: SensorResolution | None, stats: dict[str, list[str]]) -> bool:
+def visualize_file(
+    file_path: Path,
+    args: argparse.Namespace,
+    resolution: SensorResolution | None,
+    stats: dict[str, list[str]],
+) -> bool:
     while True:
         try:
             if not file_path.exists():
@@ -249,7 +294,12 @@ def visualize_file(file_path: Path, args: argparse.Namespace, resolution: Sensor
             surface = Surface(depth_map)
 
             print(f"Processing {file_path.name}")
-            append_session_entry(workflow="visualizer", dataset=normalize_dataset_name(args.dataset), category="reviewed", value=file_path.name)
+            append_session_entry(
+                workflow="visualizer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="reviewed",
+                value=file_path.name,
+            )
             add_batch_item(stats, "reviewed", file_path.name)
             print_scientific_summary(file_path.name, surface, profile)
 
@@ -266,7 +316,9 @@ def visualize_file(file_path: Path, args: argparse.Namespace, resolution: Sensor
             if args.show_profile and not slopes_drawn:
                 print("[WARN] Profile slopes could not be drawn for this file.")
 
-            action = ask_post_visualization_action(single_mode=(args.mode == "single" or args.filename is not None))
+            action = ask_post_visualization_action(
+                single_mode=(args.mode == "single" or args.filename is not None)
+            )
             if action == "repeat":
                 continue
             if action == "fix":
@@ -288,13 +340,24 @@ def visualize_file(file_path: Path, args: argparse.Namespace, resolution: Sensor
                 exception=exception,
             )
             print(f"Logged error details to: {log_path}")
-            append_session_entry(workflow="visualizer", dataset=normalize_dataset_name(args.dataset), category="failed", value=file_path.name)
+            append_session_entry(
+                workflow="visualizer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="failed",
+                value=file_path.name,
+            )
             add_batch_item(stats, "failed", file_path.name)
             add_batch_item(stats, "problematic", file_path.name)
             if not getattr(args, "interactive", False):
                 raise
             while True:
-                action = ask_error_action(allow_fix=False, allow_edit=False, allow_skip=True, allow_stop=True, default="skip")
+                action = ask_error_action(
+                    allow_fix=False,
+                    allow_edit=False,
+                    allow_skip=True,
+                    allow_stop=True,
+                    default="skip",
+                )
                 if action == "details":
                     print(format_exception_text(exception))
                     continue
@@ -313,13 +376,24 @@ def visualize_file(file_path: Path, args: argparse.Namespace, resolution: Sensor
                 exception=exception,
             )
             print(f"Logged error details to: {log_path}")
-            append_session_entry(workflow="visualizer", dataset=normalize_dataset_name(args.dataset), category="failed", value=file_path.name)
+            append_session_entry(
+                workflow="visualizer",
+                dataset=normalize_dataset_name(args.dataset),
+                category="failed",
+                value=file_path.name,
+            )
             add_batch_item(stats, "failed", file_path.name)
             add_batch_item(stats, "problematic", file_path.name)
             if not getattr(args, "interactive", False):
                 raise
             while True:
-                action = ask_error_action(allow_fix=True, allow_edit=True, allow_skip=True, allow_stop=True, default="retry")
+                action = ask_error_action(
+                    allow_fix=True,
+                    allow_edit=True,
+                    allow_skip=True,
+                    allow_stop=True,
+                    default="retry",
+                )
                 if action == "details":
                     print(format_exception_text(exception))
                     continue
@@ -336,8 +410,11 @@ def visualize_file(file_path: Path, args: argparse.Namespace, resolution: Sensor
                 return False
 
 
-
-def reopen_problematic_visualizations(args: argparse.Namespace, problematic_files: list[str], resolution: SensorResolution | None) -> None:
+def reopen_problematic_visualizations(
+    args: argparse.Namespace,
+    problematic_files: list[str],
+    resolution: SensorResolution | None,
+) -> None:
     if not problematic_files:
         return
     if ask_problematic_action() != "reopen":
@@ -345,13 +422,22 @@ def reopen_problematic_visualizations(args: argparse.Namespace, problematic_file
     for filename in problematic_files:
         file_path = get_dataset_dir(args.dataset) / filename
         if file_path.exists():
-            visualize_file(file_path, args, resolution, {"reviewed": [], "failed": [], "problematic": []})
+            visualize_file(
+                file_path,
+                args,
+                resolution,
+                {"reviewed": [], "failed": [], "problematic": []},
+            )
 
 
 def main() -> None:
     args = parse_args() if len(sys.argv) > 1 else build_interactive_args()
     session_path = ensure_session_summary_path()
-    append_session_note("visualizer", f"Started visual review (mode={args.mode})", dataset=normalize_dataset_name(args.dataset))
+    append_session_note(
+        "visualizer",
+        f"Started visual review (mode={args.mode})",
+        dataset=normalize_dataset_name(args.dataset),
+    )
     print(f"Session summary: {session_path}")
     if not (args.show_2d or args.show_profile or args.show_3d):
         args.show_2d = args.show_profile = args.show_3d = True
@@ -364,7 +450,9 @@ def main() -> None:
             break
     print_batch_summary("visualizer", stats)
     if getattr(args, "interactive", False):
-        reopen_problematic_visualizations(args, stats.get("problematic", []), resolution)
+        reopen_problematic_visualizations(
+            args, stats.get("problematic", []), resolution
+        )
 
 
 if __name__ == "__main__":

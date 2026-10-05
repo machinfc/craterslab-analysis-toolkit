@@ -23,7 +23,6 @@ def build_observable_row(
     return row
 
 
-
 def write_observables_csv(
     path: Path | str,
     observables: Sequence[str],
@@ -38,7 +37,6 @@ def write_observables_csv(
         writer.writerows(rows)
 
     return output_path
-
 
 
 def write_profile_csv(path: Path | str, profile) -> Path:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import traceback
 from datetime import datetime
 from pathlib import Path
-import traceback
 
 from toolkit.interactive import ask_choice
 from toolkit.paths import OUTPUT_DIR, ensure_directory
@@ -12,8 +12,9 @@ DEFAULT_ERROR_LOG = ERROR_LOG_DIR / "error_history.txt"
 
 
 def format_exception_text(exception: Exception) -> str:
-    return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
-
+    return "".join(
+        traceback.format_exception(type(exception), exception, exception.__traceback__)
+    )
 
 
 def print_processing_error(workflow: str, filename: str, exception: Exception) -> None:
@@ -23,7 +24,6 @@ def print_processing_error(workflow: str, filename: str, exception: Exception) -
     print(f"Type: {type(exception).__name__}")
     print(f"Message: {exception}")
     print("!" * 80)
-
 
 
 def append_error_log(
@@ -54,7 +54,6 @@ def append_error_log(
     with path.open("a", encoding="utf-8") as logfile:
         logfile.write("\n".join(lines) + "\n")
     return path
-
 
 
 def ask_error_action(

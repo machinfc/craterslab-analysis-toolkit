@@ -17,7 +17,6 @@ def _format_mapping(mapping: Mapping[str, object]) -> list[str]:
     return lines
 
 
-
 def append_fix_log(
     *,
     script_name: str,

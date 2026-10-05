@@ -12,8 +12,15 @@ SESSION_LOG_DIR = ensure_directory(OUTPUT_DIR / "session_logs")
 SESSION_ENV_VAR = "CRATERSLAB_SESSION_SUMMARY"
 SESSION_STATE_ENV_VAR = "CRATERSLAB_SESSION_STATE"
 
-DEFAULT_CATEGORIES = ["analyzed", "reviewed", "failed", "corrected", "outputs", "output", "note"]
-
+DEFAULT_CATEGORIES = [
+    "analyzed",
+    "reviewed",
+    "failed",
+    "corrected",
+    "outputs",
+    "output",
+    "note",
+]
 
 
 def _default_state() -> dict[str, Any]:
@@ -22,7 +29,6 @@ def _default_state() -> dict[str, Any]:
         "updated": None,
         "events": [],
     }
-
 
 
 def ensure_session_summary_path() -> Path:
@@ -40,7 +46,6 @@ def ensure_session_summary_path() -> Path:
     ensure_session_state_path(path)
     _render_session_summary(path, _load_state())
     return path
-
 
 
 def ensure_session_state_path(summary_path: Path | None = None) -> Path:
@@ -61,7 +66,6 @@ def ensure_session_state_path(summary_path: Path | None = None) -> Path:
     return state_path
 
 
-
 def _load_state() -> dict[str, Any]:
     state_path = ensure_session_state_path()
     try:
@@ -72,11 +76,9 @@ def _load_state() -> dict[str, Any]:
         return state
 
 
-
 def _save_state(state: dict[str, Any]) -> None:
     state_path = ensure_session_state_path()
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-
 
 
 def _unique_preserve_order(values: list[str]) -> list[str]:
@@ -87,7 +89,6 @@ def _unique_preserve_order(values: list[str]) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
-
 
 
 def _group_events(state: dict[str, Any]) -> dict[str, dict[str, list[str]]]:
@@ -101,9 +102,10 @@ def _group_events(state: dict[str, Any]) -> dict[str, dict[str, list[str]]]:
         grouped[workflow][category].append(value)
     for workflow in grouped:
         for category in list(grouped[workflow]):
-            grouped[workflow][category] = _unique_preserve_order(grouped[workflow][category])
+            grouped[workflow][category] = _unique_preserve_order(
+                grouped[workflow][category]
+            )
     return grouped
-
 
 
 def _render_session_summary(path: Path, state: dict[str, Any]) -> None:
@@ -122,18 +124,24 @@ def _render_session_summary(path: Path, state: dict[str, Any]) -> None:
         for workflow, categories in grouped.items():
             lines.append(f"Workflow: {workflow}")
             lines.append("-" * 80)
-            ordered_categories = [*DEFAULT_CATEGORIES, *sorted(c for c in categories if c not in DEFAULT_CATEGORIES)]
+            ordered_categories = [
+                *DEFAULT_CATEGORIES,
+                *sorted(c for c in categories if c not in DEFAULT_CATEGORIES),
+            ]
             for category in ordered_categories:
                 values = categories.get(category, [])
                 if not values:
                     continue
-                title = "Outputs" if category in {"output", "outputs"} else category.capitalize()
+                title = (
+                    "Outputs"
+                    if category in {"output", "outputs"}
+                    else category.capitalize()
+                )
                 lines.append(f"{title} ({len(values)}):")
                 for value in values:
                     lines.append(f"  - {value}")
                 lines.append("")
     path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-
 
 
 def append_session_entry(
@@ -161,6 +169,9 @@ def append_session_entry(
     return path
 
 
-
-def append_session_note(workflow: str, message: str, dataset: str | None = None) -> Path:
-    return append_session_entry(workflow=workflow, category="note", value=message, dataset=dataset)
+def append_session_note(
+    workflow: str, message: str, dataset: str | None = None
+) -> Path:
+    return append_session_entry(
+        workflow=workflow, category="note", value=message, dataset=dataset
+    )

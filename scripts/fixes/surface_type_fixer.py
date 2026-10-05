@@ -1,19 +1,29 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+from pathlib import Path
 
 from craterslab.classification import SurfaceType
 from craterslab.craters import Surface
 from craterslab.sensors import DepthMap, SensorResolution
+
 from toolkit.exporters import build_observable_row, write_observables_csv
-from toolkit.interactive import ask_bbox, ask_choice, ask_dataset, ask_float, ask_text, ask_yes_no, choose_filename_from_directory
-from toolkit.paths import OUTPUT_DIR, get_dataset_dir, get_dataset_info, normalize_dataset_name
+from toolkit.interactive import (
+    ask_bbox,
+    ask_choice,
+    ask_dataset,
+    ask_float,
+    ask_text,
+    ask_yes_no,
+    choose_filename_from_directory,
+)
+from toolkit.paths import (
+    OUTPUT_DIR,
+    get_dataset_dir,
+    get_dataset_info,
+    normalize_dataset_name,
+)
 
 ALL_OBSERVABLES = ["D", "d_max", "V_in", "V_ex", "V_exc", "epsilon", "V_cp", "H_cp"]
 DEFAULT_CORRECTIONS = [
@@ -32,9 +42,10 @@ SURFACE_TYPE_OPTIONS = {
 def parse_bbox(value: str) -> tuple[int, int, int, int]:
     parts = [int(part.strip()) for part in value.split(",")]
     if len(parts) != 4:
-        raise argparse.ArgumentTypeError("Bounding box must contain 4 integers: x,y,w,h")
+        raise argparse.ArgumentTypeError(
+            "Bounding box must contain 4 integers: x,y,w,h"
+        )
     return tuple(parts)  # type: ignore[return-value]
-
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -44,7 +55,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataset", default="compacted")
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--skip-missing", action="store_true")
-    parser.add_argument("--crop-mode", choices=["auto", "bbox", "borders", "none"], default="auto")
+    parser.add_argument(
+        "--crop-mode", choices=["auto", "bbox", "borders", "none"], default="auto"
+    )
     parser.add_argument("--crop-ratio", type=float, default=0.15)
     parser.add_argument("--bbox", type=parse_bbox, default=(10, 50, 100, 100))
     parser.add_argument("--xres", type=float, default=None)
@@ -58,7 +71,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Vertical offset used to adjust the LROC/QuickMap zero reference for lunar geodesy.",
     )
     return parser.parse_args(argv)
-
 
 
 def build_interactive_args() -> argparse.Namespace:
@@ -80,7 +92,11 @@ def build_interactive_args() -> argparse.Namespace:
     elif crop_mode == "borders":
         crop_ratio = ask_float("Crop ratio", crop_ratio)
 
-    output = Path(ask_text("Output CSV path", str(OUTPUT_DIR / f"{dataset}_obsv_surface_type.csv")))
+    output = Path(
+        ask_text(
+            "Output CSV path", str(OUTPUT_DIR / f"{dataset}_obsv_surface_type.csv")
+        )
+    )
     xres = yres = zres = None
     scale = None
     z_shift = 0.0
@@ -109,7 +125,6 @@ def build_interactive_args() -> argparse.Namespace:
     )
 
 
-
 def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
     if normalize_dataset_name(args.dataset) != "quickmap":
         return None
@@ -122,7 +137,6 @@ def build_resolution(args: argparse.Namespace) -> SensorResolution | None:
     )
 
 
-
 def collect_corrections_interactively(dataset: str) -> list[tuple[str, SurfaceType]]:
     dataset_info = get_dataset_info(dataset)
     suffix = f".{dataset_info['file_type']}"
@@ -131,14 +145,16 @@ def collect_corrections_interactively(dataset: str) -> list[tuple[str, SurfaceTy
         filename = choose_filename_from_directory(get_dataset_dir(dataset), [suffix])
         surface_key = ask_choice(
             "Select corrected surface type",
-            {key: value.name.replace("_", " ").title() for key, value in SURFACE_TYPE_OPTIONS.items()},
+            {
+                key: value.name.replace("_", " ").title()
+                for key, value in SURFACE_TYPE_OPTIONS.items()
+            },
             default="complex_crater",
         )
         corrections.append((filename, SURFACE_TYPE_OPTIONS[surface_key]))
         if not ask_yes_no("Add another file to this batch", default=False):
             break
     return corrections
-
 
 
 def apply_crop(depth_map: DepthMap, args: argparse.Namespace) -> None:
@@ -150,8 +166,9 @@ def apply_crop(depth_map: DepthMap, args: argparse.Namespace) -> None:
         depth_map.crop(args.bbox)
 
 
-
-def run_fix(args: argparse.Namespace, corrections: list[tuple[str, SurfaceType]]) -> Path:
+def run_fix(
+    args: argparse.Namespace, corrections: list[tuple[str, SurfaceType]]
+) -> Path:
     dataset = normalize_dataset_name(args.dataset)
     dataset_dir = get_dataset_dir(dataset)
     resolution = build_resolution(args)
@@ -169,9 +186,18 @@ def run_fix(args: argparse.Namespace, corrections: list[tuple[str, SurfaceType]]
         print(f"Fixing {filename} -> {surface_type}")
         if dataset == "quickmap":
             if resolution is None:
-                raise ValueError("QuickMap surface fixing requires valid resolution values")
-            print("Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data.")
-            depth_map = DepthMap.from_xyz_file(file_path.name, data_folder=str(dataset_dir), resolution=resolution, z_shift=args.z_shift)
+                raise ValueError(
+                    "QuickMap surface fixing requires valid resolution values"
+                )
+            print(
+                "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
+            )
+            depth_map = DepthMap.from_xyz_file(
+                file_path.name,
+                data_folder=str(dataset_dir),
+                resolution=resolution,
+                z_shift=args.z_shift,
+            )
         else:
             depth_map = DepthMap.load(file_path)
         apply_crop(depth_map, args)
@@ -185,13 +211,18 @@ def run_fix(args: argparse.Namespace, corrections: list[tuple[str, SurfaceType]]
     return output_path
 
 
-
 def main() -> None:
     if len(sys.argv) > 1:
         args = parse_args()
-        corrections = DEFAULT_CORRECTIONS if normalize_dataset_name(args.dataset) == "compacted" else []
+        corrections = (
+            DEFAULT_CORRECTIONS
+            if normalize_dataset_name(args.dataset) == "compacted"
+            else []
+        )
         if not corrections:
-            print("No built-in correction list for this dataset. Use interactive mode instead.")
+            print(
+                "No built-in correction list for this dataset. Use interactive mode instead."
+            )
             return
         run_fix(args, corrections)
     else:
