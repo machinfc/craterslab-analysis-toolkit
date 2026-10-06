@@ -1,12 +1,15 @@
-# Python
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+
+# Test / lint / coverage caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 
 # Virtual environments
@@ -14,22 +17,38 @@ htmlcov/
 venv/
 env/
 
+# Packaging artifacts
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
 # Editors / IDEs
-.vscode/
 .idea/
 *.swp
 .DS_Store
 
-# Outputs
+# VS Code:
+# ignore everything by default, but keep useful project settings if desired
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Generated outputs
 output/**
 !output/.gitkeep
 
-# Local data and generated artifacts
+# Large/local scientific data
 *.npz
 *.mat
 *.xyz
+
+# Generated figures and exports
 *.eps
-*.csv
+
+# Keep data folder structure, but not real datasets
+!data/
+!data/**/
 !data/**/.gitkeep
 !data/README.md
 
