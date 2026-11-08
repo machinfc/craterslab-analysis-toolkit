@@ -17,7 +17,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-  "craterslab>=0.2.8",
+  "craterslab[classification]>=1.0.0",
   "numpy>=1.24",
   "opencv-python>=4.8",
   "scipy>=1.11",

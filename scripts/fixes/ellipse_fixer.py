@@ -6,7 +6,8 @@ from pathlib import Path
 
 from craterslab.classification import SurfaceType
 from craterslab.craters import Surface
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.depth_map import DepthMap, SensorResolution
+from craterslab.readers import read_xyz
 
 from toolkit.batch_review import (
     add_batch_item,
@@ -259,9 +260,8 @@ def load_depth_map(file_path: Path, args: argparse.Namespace) -> DepthMap:
         print(
             "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
         )
-        depth_map = DepthMap.from_xyz_file(
-            file_path.name,
-            data_folder=str(dataset_dir),
+        depth_map = read_xyz(
+            dataset_dir / file_path.name,
             resolution=resolution,
             z_shift=args.z_shift,
         )
@@ -297,7 +297,9 @@ def review_single_file(
     while True:
         try:
             depth_map = load_depth_map(file_path, file_args)
-            surface = Surface(depth_map, ellipse_points=file_args.ellipse_points)
+            surface = Surface.from_depth_map(
+                depth_map, ellipse_points=file_args.ellipse_points
+            )
             surface.set_type(file_args.surface_type)
             profile = surface.max_profile
 
@@ -495,7 +497,9 @@ def run_batch_fix(args: argparse.Namespace) -> tuple[Path, list[list[object]]]:
             row = review_single_file(file_path, args, output_path)
         else:
             depth_map = load_depth_map(file_path, args)
-            surface = Surface(depth_map, ellipse_points=args.ellipse_points)
+            surface = Surface.from_depth_map(
+                depth_map, ellipse_points=args.ellipse_points
+            )
             surface.set_type(args.surface_type)
             row = build_observable_row(file_path.name, surface, ALL_OBSERVABLES)
             log_path = append_fix_log(

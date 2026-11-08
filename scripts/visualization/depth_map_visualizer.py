@@ -5,9 +5,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+from craterslab.cnn import CNNClassifier
 from craterslab.craters import Surface
+from craterslab.depth_map import DepthMap, SensorResolution
 from craterslab.ellipse import EllipticalModel
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.landmarks import find_landmarks, wall_slopes
+from craterslab.readers import read_xyz
 
 from toolkit.batch_review import (
     add_batch_item,
@@ -216,9 +219,8 @@ def load_depth_map(
         print(
             "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
         )
-        depth_map = DepthMap.from_xyz_file(
-            file_path.name,
-            data_folder=str(file_path.parent),
+        depth_map = read_xyz(
+            file_path,
             resolution=resolution,
             z_shift=args.z_shift,
         )
@@ -235,7 +237,7 @@ def print_scientific_summary(filename: str, surface: Surface, profile) -> None:
     print("=" * 72)
     print(f"Classified surface type: {surface.type}")
     try:
-        m1, m2 = profile.slopes()
+        m1, m2 = wall_slopes(profile, find_landmarks(profile))
         print(f"Profile slopes: m1={m1}, m2={m2}")
     except Exception:  # noqa: BLE001
         print("Profile slopes: unavailable")
@@ -291,7 +293,8 @@ def visualize_file(
             depth_map = load_depth_map(file_path, args, resolution)
             ellipse_model = EllipticalModel(depth_map, args.ellipse_points)
             profile = ellipse_model.max_profile()
-            surface = Surface(depth_map)
+            surface = Surface.from_depth_map(depth_map)
+            surface.classify(CNNClassifier())
 
             print(f"Processing {file_path.name}")
             append_session_entry(

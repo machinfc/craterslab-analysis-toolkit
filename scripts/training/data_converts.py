@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.depth_map import SensorResolution
+from craterslab.readers import read_mat
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 INPUT_FOLDER = PROJECT_ROOT / "data_CAGEO" / "matlab_ALL.CAGEO"
@@ -16,14 +17,12 @@ def main() -> None:
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 
     for index in FILE_RANGE:
-        d0 = DepthMap.from_mat_file(
-            f"planoexp{index}.mat",
-            data_folder=str(INPUT_FOLDER),
+        d0 = read_mat(
+            INPUT_FOLDER / f"planoexp{index}.mat",
             resolution=RESOLUTION,
         )
-        df = DepthMap.from_mat_file(
-            f"craterexp{index}.mat",
-            data_folder=str(INPUT_FOLDER),
+        df = read_mat(
+            INPUT_FOLDER / f"craterexp{index}.mat",
             resolution=RESOLUTION,
         )
         depth_map = d0 - df

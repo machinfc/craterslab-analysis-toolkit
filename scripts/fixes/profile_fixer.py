@@ -4,9 +4,11 @@ import argparse
 import sys
 from pathlib import Path
 
+from craterslab.depth_map import DepthMap, SensorResolution
 from craterslab.ellipse import EllipticalModel
+from craterslab.landmarks import find_landmarks, wall_slopes
 from craterslab.profiles import Profile
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.readers import read_xyz
 
 from toolkit.error_handling import (
     append_error_log,
@@ -195,9 +197,8 @@ def load_depth_map(args: argparse.Namespace) -> DepthMap:
         resolution = build_resolution(args)
         if resolution is None:
             raise ValueError("QuickMap profile fixing requires valid resolution values")
-        depth_map = DepthMap.from_xyz_file(
-            file_path.name,
-            data_folder=str(dataset_dir),
+        depth_map = read_xyz(
+            dataset_dir / file_path.name,
             resolution=resolution,
             z_shift=args.z_shift,
         )
@@ -232,7 +233,7 @@ def run_profile_fix(args: argparse.Namespace) -> Path:
             else:
                 profile = ellipse_model.max_profile()
 
-            m1, m2 = profile.slopes()
+            m1, m2 = wall_slopes(profile, find_landmarks(profile))
             print(f"Computed slopes: m1={m1}, m2={m2}")
 
             if (

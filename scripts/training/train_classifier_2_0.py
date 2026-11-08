@@ -4,14 +4,14 @@ import argparse
 import random
 
 import numpy as np
-from craterslab.classification import (
+from craterslab.cnn import (
     NUM_CLASSES,
-    get_trained_model,
+    CNNClassifier,
     get_untrained_model,
     normalize,
     save_trained_model,
 )
-from craterslab.sensors import DepthMap
+from craterslab.depth_map import DepthMap
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 
@@ -105,7 +105,7 @@ def main() -> None:
     )
     save_trained_model(model)
 
-    model = get_trained_model()
+    model = CNNClassifier().model
     test_loss, test_acc = model.evaluate(test_images, test_labels)
     print(f"Test loss: {test_loss}")
     print(f"Test accuracy: {test_acc}")

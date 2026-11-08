@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.depth_map import DepthMap, SensorResolution
+from craterslab.sensors import capture_kinect
 
 from toolkit.error_handling import (
     append_error_log,
@@ -205,7 +206,7 @@ def capture_single_depth_map(
     sensor: str, resolution: SensorResolution, average_on: int, timeout_ms: int
 ) -> DepthMap:
     if sensor == "kinect":
-        return DepthMap.from_kinect_sensor(resolution, average_on=average_on)
+        return capture_kinect(resolution, average_on=average_on)
     if sensor == "femto_bolt":
         return capture_femto_bolt_depth_map(
             resolution, average_on=average_on, timeout_ms=timeout_ms
