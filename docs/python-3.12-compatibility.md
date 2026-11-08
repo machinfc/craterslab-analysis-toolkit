@@ -37,7 +37,7 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip uninstall -y craterslab tensorflow keras tf-keras || true
-pip install "tensorflow>=2.16.1" "keras>=3.0" "craterslab>=0.2.8"
+pip install "tensorflow>=2.16.1" "keras>=3.0" "craterslab[classification]>=1.0.0"
 pip install -e .
 python scripts/diagnostics/check_craterslab_env.py --full-traceback
 ```

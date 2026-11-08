@@ -5,8 +5,9 @@ import csv
 import sys
 from pathlib import Path
 
+from craterslab.depth_map import DepthMap
 from craterslab.ellipse import EllipticalModel
-from craterslab.sensors import DepthMap
+from craterslab.landmarks import find_landmarks, wall_slopes
 
 from toolkit.error_handling import (
     append_error_log,
@@ -154,7 +155,7 @@ def process_one_file(
             depth_map.auto_crop()
             ellipse_model = EllipticalModel(depth_map, args.ellipse_points)
             profile = ellipse_model.max_profile()
-            m1, m2 = profile.slopes()
+            m1, m2 = wall_slopes(profile, find_landmarks(profile))
             print(f"Processed {file_path.name}: m1={m1}, m2={m2}")
             append_session_entry(
                 workflow="slope calculator",

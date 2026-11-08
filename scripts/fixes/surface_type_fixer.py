@@ -6,7 +6,8 @@ from pathlib import Path
 
 from craterslab.classification import SurfaceType
 from craterslab.craters import Surface
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.depth_map import DepthMap, SensorResolution
+from craterslab.readers import read_xyz
 
 from toolkit.exporters import build_observable_row, write_observables_csv
 from toolkit.interactive import (
@@ -192,16 +193,15 @@ def run_fix(
             print(
                 "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
             )
-            depth_map = DepthMap.from_xyz_file(
-                file_path.name,
-                data_folder=str(dataset_dir),
+            depth_map = read_xyz(
+                dataset_dir / file_path.name,
                 resolution=resolution,
                 z_shift=args.z_shift,
             )
         else:
             depth_map = DepthMap.load(file_path)
         apply_crop(depth_map, args)
-        surface = Surface(depth_map)
+        surface = Surface.from_depth_map(depth_map)
         surface.set_type(surface_type)
         rows.append(build_observable_row(filename, surface, ALL_OBSERVABLES))
 

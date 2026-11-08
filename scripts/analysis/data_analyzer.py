@@ -5,9 +5,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+from craterslab.cnn import CNNClassifier
 from craterslab.craters import Surface
+from craterslab.depth_map import DepthMap, SensorResolution
 from craterslab.ellipse import EllipticalModel
-from craterslab.sensors import DepthMap, SensorResolution
+from craterslab.readers import read_xyz
 from craterslab.visuals import plot_2D, plot_3D
 
 from toolkit.batch_review import (
@@ -220,9 +222,8 @@ def load_depth_map(
         print(
             "Using z_shift to correct the lunar geodetic zero reference in the imported LROC/QuickMap data."
         )
-        depth_map = DepthMap.from_xyz_file(
-            file_path.name,
-            data_folder=str(file_path.parent),
+        depth_map = read_xyz(
+            file_path,
             resolution=resolution,
             z_shift=args.z_shift,
         )
@@ -360,7 +361,8 @@ def process_one_file(
 
             print(f"Analyzing {file_path.name}")
             depth_map = load_depth_map(file_path, args, resolution)
-            surface = Surface(depth_map)
+            surface = Surface.from_depth_map(depth_map)
+            surface.classify(CNNClassifier())
             ellipse_model = EllipticalModel(depth_map, args.ellipse_points)
             profile = ellipse_model.max_profile()
             row = build_observable_row(file_path.name, surface, ALL_OBSERVABLES)

@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from craterslab.ellipse import EllipseVisualConfig
+from craterslab.landmarks import find_landmarks, wall_slopes
 from craterslab.visuals import plot_2D, plot_3D, plot_profile
 from matplotlib import pyplot as plt
 
 
 def profile_supports_slopes(profile) -> bool:
     try:
-        profile.slopes()
+        wall_slopes(profile, find_landmarks(profile))
     except Exception:  # noqa: BLE001
         return False
-    return all(hasattr(profile, attr) for attr in ("t1", "t2", "b1", "b2"))
+    return True
 
 
 def plot_profile_safe(profile, block: bool = True) -> bool:

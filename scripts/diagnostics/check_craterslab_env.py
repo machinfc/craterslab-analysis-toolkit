@@ -114,23 +114,23 @@ def diagnose(args: argparse.Namespace) -> None:
     run_check("import craterslab", import_craterslab, args.full_traceback)
 
     def load_classifier_model():
-        from craterslab.classification import get_trained_model
+        from craterslab.cnn import CNNClassifier
 
-        model = get_trained_model()
+        model = CNNClassifier()
         return f"model loaded={model is not None}"
 
     run_check("load classifier model", load_classifier_model, args.full_traceback)
 
     def import_core_objects():
         from craterslab.craters import Surface  # noqa: F401
-        from craterslab.sensors import DepthMap, SensorResolution  # noqa: F401
+        from craterslab.depth_map import DepthMap, SensorResolution  # noqa: F401
 
         return "Surface, DepthMap, SensorResolution"
 
     run_check("import core objects", import_core_objects, args.full_traceback)
 
     def create_dummy_depth_map():
-        from craterslab.sensors import DepthMap, SensorResolution
+        from craterslab.depth_map import DepthMap, SensorResolution
 
         dm = DepthMap(
             np.zeros((100, 100), dtype=float), SensorResolution(1.0, 1.0, 1.0, "mm")
@@ -143,7 +143,7 @@ def diagnose(args: argparse.Namespace) -> None:
         sample_npz = args.sample_npz.resolve()
 
         def load_npz_file():
-            from craterslab.sensors import DepthMap
+            from craterslab.depth_map import DepthMap
 
             dm = DepthMap.load(sample_npz)
             return f"loaded npz shape={dm.map.shape} from {sample_npz.name}"
@@ -153,11 +153,13 @@ def diagnose(args: argparse.Namespace) -> None:
         )
 
         def classify_npz_file():
+            from craterslab.cnn import CNNClassifier
             from craterslab.craters import Surface
-            from craterslab.sensors import DepthMap
+            from craterslab.depth_map import DepthMap
 
             dm = DepthMap.load(sample_npz)
-            surface = Surface(dm)
+            surface = Surface.from_depth_map(dm)
+            surface.classify(CNNClassifier())
             return f"classified as {surface.type} with {len(surface.observables)} observables"
 
         run_check(
@@ -170,12 +172,12 @@ def diagnose(args: argparse.Namespace) -> None:
         sample_xyz = args.sample_xyz.resolve()
 
         def load_xyz_file():
-            from craterslab.sensors import DepthMap, SensorResolution
+            from craterslab.depth_map import SensorResolution
+            from craterslab.readers import read_xyz
 
             resolution = SensorResolution(args.xres, args.yres, args.zres, args.scale)
-            dm = DepthMap.from_xyz_file(
-                sample_xyz.name,
-                data_folder=str(sample_xyz.parent),
+            dm = read_xyz(
+                sample_xyz,
                 resolution=resolution,
                 z_shift=0,
             )
